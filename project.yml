@@ -1,0 +1,52 @@
+name: OpenInput
+options:
+  bundleIdPrefix: com.x0c
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "2.0.0"
+targets:
+  OpenInput:
+    type: application
+    platform: macOS
+    sources:
+      - path: OpenInput
+        excludes:
+          - Resources/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.x0c.openinput
+        PRODUCT_NAME: OpenInput
+        INFOPLIST_FILE: OpenInput/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: OpenInput/Resources/OpenInput.entitlements
+        GENERATE_INFOPLIST_FILE: false
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+    dependencies:
+      - package: KeyboardShortcuts
+    info:
+      path: OpenInput/Resources/Info.plist
+      properties:
+        CFBundleName: OpenInput
+        CFBundleDisplayName: 智能输入小窗
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        NSPrincipalClass: NSApplication
+        NSHumanReadableCopyright: "Copyright © 2026 x0c"
+        NSAccessibilityUsageDescription: OpenInput 需要辅助功能权限，以便将编辑好的文本粘贴回您原先所在的输入框。
