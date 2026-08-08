@@ -56,6 +56,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         panel.makeKey()
         viewModel.focusEditor(force: true)
         installAutoHideMonitors()
+        updateFocusVisual()
 
         if reason == .autoShow {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
@@ -63,6 +64,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
                 panel.orderFrontRegardless()
                 panel.makeKey()
                 self.viewModel.focusEditor(force: true)
+                self.updateFocusVisual()
             }
         }
     }
@@ -78,7 +80,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         }
     }
 
-    /// esc / ✕ / hotkey — also turns off auto-show for that app.
+    /// esc / ✕ / 热键关闭——同时关闭该应用的自动打开。
     func dismissActively() {
         let focus = FocusTracker.shared.captured
         AppMemoryStore.shared.rememberDismissed(
@@ -89,7 +91,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         hide(clearText: false)
     }
 
-    /// Switched app / clicked outside — close without clearing app memory.
+    /// 切换应用 / 点击小窗外——关闭但不改动应用记忆。
     func dismissPassively() {
         guard isVisible else { return }
         AutoShowMonitor.shared.suppressBriefly(seconds: 1.2)
@@ -125,7 +127,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         }
     }
 
-    // MARK: - Auto-hide when user leaves
+    // MARK: - 用户离开时自动隐藏
 
     private func installAutoHideMonitors() {
         removeAutoHideMonitors()
@@ -193,8 +195,14 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         host.layer?.masksToBounds = false
     }
 
+    /// 编辑器获得键盘焦点时的自有焦点态：边框外圈光晕。
+    private func updateFocusVisual() {
+        borderView?.isFocused = panel?.isKeyWindow == true
+        borderView?.needsDisplay = true
+    }
+
     private func ensurePanel() {
-        // .nonactivatingPanel MUST be set at init time; recreate if an old panel lacks it.
+        // .nonactivatingPanel 必须在 init 时设定；旧面板缺了它就必须重建。
         if let panel, panel.styleMask.contains(.nonactivatingPanel) {
             return
         }
@@ -308,7 +316,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         updateShadowPath()
     }
 
-    /// Anchor beside the focused input (AX caret → field frame → mouse). Never reuse last window origin.
+    /// 锚定在输入框旁（AX 光标 → 字段矩形 → 鼠标）。绝不复用上次的窗口原点。
     private func placeNearInput(_ panel: NSPanel) {
         let pad = Self.shadowPadding
         let cardSize = CGSize(
@@ -321,7 +329,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         let rawAnchor = FocusTracker.shared.captured?.anchorRect
             ?? CGRect(x: mouse.x, y: mouse.y - 8, width: 2, height: 16)
 
-        // Wide fields (Chrome omnibox): pin near mouse X inside the field.
+        // 超宽字段（Chrome 地址栏）：锚点收敛到鼠标附近的字段内部。
         var anchor = rawAnchor
         if rawAnchor.width > 280 {
             let x = min(max(mouse.x - 16, rawAnchor.minX), max(rawAnchor.maxX - 48, rawAnchor.minX))
@@ -369,19 +377,20 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     private func presentInjectFailure(_ error: Error, text: String) {
         HistoryStore.shared.add(text)
         let alert = NSAlert()
-        alert.messageText = "未能自动插入"
-        alert.informativeText = error.localizedDescription + "\n文本已复制到剪贴板，可手动粘贴。文本也已写入历史记录。"
+        alert.messageText = String(localized: "panel.inject.failed.title")
+        alert.informativeText = error.localizedDescription
+            + "\n" + String(localized: "panel.inject.failed.clipboard")
         alert.alertStyle = .warning
         if case TextInjector.InjectError.accessibilityDenied = error {
-            alert.addButton(withTitle: "打开系统设置")
-            alert.addButton(withTitle: "好")
+            alert.addButton(withTitle: String(localized: "panel.permission.open_settings"))
+            alert.addButton(withTitle: String(localized: "alert.ok"))
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
             if alert.runModal() == .alertFirstButtonReturn {
                 AccessibilityPermission.openSystemSettings()
             }
         } else {
-            alert.addButton(withTitle: "好")
+            alert.addButton(withTitle: String(localized: "alert.ok"))
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
             alert.runModal()
@@ -389,17 +398,22 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
-        // Clicking another app's window often resigns key before didActivate fires.
+        updateFocusVisual()
+        // 点击其他应用的窗口时，resignKey 往往先于 didActivate 触发。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             guard let self, self.isVisible else { return }
             guard Date() >= self.suppressAutoHideUntil else { return }
             guard let panel = self.panel, !panel.isKeyWindow else { return }
-            // If we lost key and aren't the frontmost process interaction, close.
+            // 失去 key 且当前前台不是本应用进程 → 关闭。
             let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
             if front != Bundle.main.bundleIdentifier {
                 self.dismissPassively()
             }
         }
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        updateFocusVisual()
     }
 
     func windowDidResize(_ notification: Notification) {
@@ -428,14 +442,16 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     }
 }
 
-/// Maccy / SaneClip pattern: non-activating panel that can still become key for typing.
+/// Maccy / SaneClip 模式：不激活应用但仍能成为 key 以接收输入的浮动面板。
 private final class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 }
 
+/// 自绘边框；编辑器持有键盘焦点时叠加一层光晕作为自有焦点态。
 private final class BorderOverlayView: NSView {
     var borderColor: NSColor = .systemBlue
+    var isFocused: Bool = false
     var lineWidth: CGFloat = 2
 
     override var isOpaque: Bool { false }
@@ -451,5 +467,17 @@ private final class BorderOverlayView: NSView {
         path.lineWidth = lineWidth
         borderColor.setStroke()
         path.stroke()
+
+        if isFocused {
+            let glowInset = inset - 2
+            let glow = NSBezierPath(
+                roundedRect: bounds.insetBy(dx: glowInset, dy: glowInset),
+                xRadius: 11 - glowInset,
+                yRadius: 11 - glowInset
+            )
+            glow.lineWidth = 1.5
+            borderColor.withAlphaComponent(0.35).setStroke()
+            glow.stroke()
+        }
     }
 }

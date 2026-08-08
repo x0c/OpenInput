@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import KeyboardShortcuts
 
@@ -5,30 +6,37 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             GeneralSettingsView()
-                .tabItem { Label("通用", systemImage: "gearshape") }
+                .tabItem { Label("settings.general", systemImage: "gearshape") }
             ShortcutsSettingsView()
-                .tabItem { Label("快捷键", systemImage: "keyboard") }
+                .tabItem { Label("settings.shortcuts", systemImage: "keyboard") }
             AutoShowSettingsView()
-                .tabItem { Label("应用记忆", systemImage: "app.badge.checkmark") }
+                .tabItem { Label("settings.appMemory", systemImage: "app.badge.checkmark") }
             HistorySettingsView()
-                .tabItem { Label("历史", systemImage: "clock") }
+                .tabItem { Label("settings.history", systemImage: "clock") }
             AppearanceSettingsView()
-                .tabItem { Label("外观", systemImage: "paintpalette") }
+                .tabItem { Label("settings.appearance", systemImage: "paintpalette") }
             AboutSettingsView()
-                .tabItem { Label("关于", systemImage: "info.circle") }
+                .tabItem { Label("settings.about", systemImage: "info.circle") }
         }
         .frame(width: 520, height: 400)
     }
 }
 
 struct GeneralSettingsView: View {
-    @ObservedObject private var preferences = PreferencesStore.shared
+    private enum FocusTarget: Hashable {
+        case accessibilitySettings
+    }
+
+    @State private var preferences = PreferencesStore.shared
     @State private var accessibilityTrusted = AccessibilityPermission.isTrusted
+    @FocusState private var focusedControl: FocusTarget?
 
     var body: some View {
+        @Bindable var preferences = preferences
+
         Form {
             Section {
-                Toggle("登录时启动", isOn: Binding(
+                Toggle("settings.general.launchAtLogin", isOn: Binding(
                     get: { preferences.launchAtLogin },
                     set: { preferences.setLaunchAtLogin($0) }
                 ))
@@ -36,9 +44,17 @@ struct GeneralSettingsView: View {
                     Text(message)
                         .font(.caption)
                         .foregroundStyle(.orange)
+                    if LaunchAtLoginService.currentStatus() == .needsApproval {
+                        Button("settings.accessibility.open_settings") {
+                            guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension") else {
+                                return
+                            }
+                            NSWorkspace.shared.open(settingsURL)
+                        }
+                    }
                 }
 
-                Picker("默认窗口大小", selection: $preferences.defaultWindowSize) {
+                Picker("settings.general.windowSize", selection: $preferences.defaultWindowSize) {
                     ForEach(DefaultWindowSize.allCases) { size in
                         Text(size.displayName).tag(size)
                     }
@@ -48,33 +64,42 @@ struct GeneralSettingsView: View {
                     InputPanelController.shared.updateBorder()
                 }
 
-                Picker("插入方式", selection: $preferences.insertionMethod) {
+                Picker("settings.general.insertion", selection: $preferences.insertionMethod) {
                     ForEach(InsertionMethod.allCases) { method in
                         Text(method.displayName).tag(method)
                     }
                 }
                 .disabled(true)
-                Text("当前仅支持粘贴；模拟键入将在后续版本提供。")
+                Text("settings.general.insertion.note")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Toggle("自动在中英文之间添加空格", isOn: $preferences.autoAddSpaces)
+                Toggle("settings.general.autoSpaces", isOn: $preferences.autoAddSpaces)
                     .disabled(true)
-                Text("智能优化将在后续版本提供。")
+                Text("settings.general.autoSpaces.note")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("辅助功能权限") {
+            Section("settings.general.accessibility") {
                 HStack {
                     Image(systemName: accessibilityTrusted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                         .foregroundStyle(accessibilityTrusted ? .green : .orange)
-                    Text(accessibilityTrusted ? "已授权" : "未授权 — 无法自动粘贴到其他应用")
+                    Text(accessibilityTrusted
+                        ? "settings.general.accessibility.granted"
+                        : "settings.general.accessibility.denied")
                     Spacer()
-                    Button(accessibilityTrusted ? "刷新" : "打开系统设置…") {
+                    Button(accessibilityTrusted ? "settings.general.refresh" : "settings.accessibility.open_settings") {
                         AccessibilityPermission.openSystemSettings()
                         accessibilityTrusted = AccessibilityPermission.isTrusted
                     }
+                    .focusEffectDisabled()
+                    .focused($focusedControl, equals: .accessibilitySettings)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .strokeBorder(focusedControl == .accessibilitySettings ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
+                    }
+                    .accessibilityHint(Text("settings.accessibility.open.accessibility.hint"))
                 }
             }
         }
@@ -84,22 +109,43 @@ struct GeneralSettingsView: View {
             accessibilityTrusted = AccessibilityPermission.isTrusted
             preferences.syncLaunchAtLoginFromSystem()
         }
+        // 用户从系统设置返回后自动重检授权状态。
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            accessibilityTrusted = AccessibilityPermission.isTrusted
+        }
     }
 }
 
 struct ShortcutsSettingsView: View {
+    @FocusState private var recorderFocused: Bool
+
     var body: some View {
         Form {
             Section {
-                KeyboardShortcuts.Recorder("显示 / 隐藏输入小窗", name: .togglePanel)
+                KeyboardShortcuts.Recorder(
+                    String(localized: "settings.shortcuts.showHide"),
+                    name: .togglePanel
+                )
+                .padding(4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(recorderFocused ? Color.accentColor.opacity(0.12) : .clear)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(recorderFocused ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
+                }
+                .focusEffectDisabled()
+                .focused($recorderFocused)
+                .accessibilityHint(Text("settings.shortcuts.recorder.accessibility.hint"))
             }
-            Section("小窗内快捷键") {
-                LabeledContent("插入并关闭", value: "↩ Return")
-                LabeledContent("插入换行", value: "⇧↩ Shift+Return")
-                LabeledContent("关闭 / 退出历史", value: "esc")
-                LabeledContent("翻阅历史", value: "↑ / ↓")
-                LabeledContent("删除当前历史", value: "⌘⌫")
-                LabeledContent("插入 Tab", value: "Tab")
+            Section("settings.shortcuts.inner") {
+                LabeledContent("settings.shortcuts.insert", value: "↩ Return")
+                LabeledContent("settings.shortcuts.newline", value: "⇧↩ Shift+Return")
+                LabeledContent("settings.shortcuts.close", value: "esc")
+                LabeledContent("settings.shortcuts.browse", value: "↑ / ↓")
+                LabeledContent("settings.shortcuts.deleteHistory", value: "⌘⌫")
+                LabeledContent("settings.shortcuts.tab", value: "Tab")
             }
         }
         .formStyle(.grouped)
@@ -108,12 +154,14 @@ struct ShortcutsSettingsView: View {
 }
 
 struct AppearanceSettingsView: View {
-    @ObservedObject private var preferences = PreferencesStore.shared
+    @State private var preferences = PreferencesStore.shared
 
     var body: some View {
+        @Bindable var preferences = preferences
+
         Form {
-            Section("边框颜色") {
-                Picker("颜色", selection: $preferences.borderColor) {
+            Section("settings.appearance.border") {
+                Picker("settings.appearance.color", selection: $preferences.borderColor) {
                     ForEach(BorderColorOption.allCases) { color in
                         HStack {
                             Circle()
@@ -130,10 +178,10 @@ struct AppearanceSettingsView: View {
                 }
             }
 
-            Section("透明度") {
+            Section("settings.appearance.opacity") {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("小窗不透明度")
+                        Text("settings.appearance.opacity.value")
                         Spacer()
                         Text("\(Int((preferences.panelOpacity * 100).rounded()))%")
                             .foregroundStyle(.secondary)
@@ -143,7 +191,7 @@ struct AppearanceSettingsView: View {
                         .onChange(of: preferences.panelOpacity) { _, _ in
                             InputPanelController.shared.updateBorder()
                         }
-                    Text("最低 35%，避免小窗几乎看不见。")
+                    Text("settings.appearance.opacity.note")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -155,19 +203,25 @@ struct AppearanceSettingsView: View {
 }
 
 struct AboutSettingsView: View {
+    /// 跟随语言变化的显示名（InfoPlist.strings 提供 zh-Hans / en 两版）。
+    private var appDisplayName: String {
+        let localized = Bundle.main.localizedInfoDictionary?["CFBundleDisplayName"] as? String
+        return localized ?? (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "OpenInput")
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "text.cursor")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
-            Text("智能输入小窗")
+            Text(verbatim: appDisplayName)
                 .font(.title2.weight(.semibold))
-            Text("OpenInput")
+            Text(verbatim: "OpenInput")
                 .foregroundStyle(.secondary)
-            Text("版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+            Text("settings.about.version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("在不便编辑的输入框中，用悬浮小窗完成复杂文本后再一键插入。")
+            Text("settings.about.description")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

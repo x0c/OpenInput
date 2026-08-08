@@ -1,0 +1,2 @@
+"CFBundleDisplayName" = "智能输入小窗";
+"NSAccessibilityUsageDescription" = "OpenInput 需要辅助功能权限，以便将编辑好的文本粘贴回您原先所在的输入框。";

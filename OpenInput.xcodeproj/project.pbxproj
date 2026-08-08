@@ -11,6 +11,7 @@
 		1DD51786DA4262F83AA679EF /* AutoShowSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31B278A84464392BDD2AE67F /* AutoShowSettingsView.swift */; };
 		1F389C9C64239E6DA38355FC /* AppMemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31752E80270E35A42031D7DA /* AppMemoryStore.swift */; };
 		25E01CE54226B263DBEE9594 /* TextInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9413C082D3AD80B1A870FBE4 /* TextInjector.swift */; };
+		2B66314775AB60D21FD17683 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 34B9881BAB51BD143609E6AC /* Localizable.xcstrings */; };
 		33ECC3EDE488D96B9740776D /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F43C28B4FB00D6EF7F47759 /* LaunchAtLoginService.swift */; };
 		356CD141AC1C95A827B4E1ED /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29D0CD29819FBFEDEB468F /* SettingsView.swift */; };
 		418D4FC25E728887795AB9F7 /* AccessibilityPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650A44B9B1FDF3D1720DA34E /* AccessibilityPermission.swift */; };
@@ -22,6 +23,7 @@
 		8769DA9507582C90FCDFC835 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E89B6255D83404E4A74997 /* PreferencesStore.swift */; };
 		890E24C47B1D67F61D0AA983 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DB7A83C151279C3000B0B06E /* Assets.xcassets */; };
 		A920B6C0FCF949E3ED01C471 /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8698FAAE1823D157FCA28CBD /* HotkeyService.swift */; };
+		ACF5AC3CF50E460BA53DAA38 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F7AB416355B604006D208E29 /* InfoPlist.strings */; };
 		AF39E1E236B3D4A3FB3A2971 /* InputPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7721344FA020FA7A74B8BFAD /* InputPanelView.swift */; };
 		CD5E62CEDF2C0E8B0581CD8B /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBABB2B83644F091E3F4D5D6 /* AppPreferences.swift */; };
 		EB108BD205C362AB5B7AE2BA /* HistorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C1719C420932898309427F /* HistorySettingsView.swift */; };
@@ -31,7 +33,10 @@
 /* Begin PBXFileReference section */
 		31752E80270E35A42031D7DA /* AppMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMemoryStore.swift; sourceTree = "<group>"; };
 		31B278A84464392BDD2AE67F /* AutoShowSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoShowSettingsView.swift; sourceTree = "<group>"; };
+		34B9881BAB51BD143609E6AC /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		3CD862F1B1CDB887CEFBD2B3 /* OpenInputApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenInputApp.swift; sourceTree = "<group>"; };
+		433E7C7D3C18C1FDC344463A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		447501AB7BE7554E3BD1C63C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5F43C28B4FB00D6EF7F47759 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginService.swift; sourceTree = "<group>"; };
 		650A44B9B1FDF3D1720DA34E /* AccessibilityPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityPermission.swift; sourceTree = "<group>"; };
 		718B041EC76D7AC6B66CEB22 /* OpenInput.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenInput.entitlements; sourceTree = "<group>"; };
@@ -164,7 +169,9 @@
 			isa = PBXGroup;
 			children = (
 				DB7A83C151279C3000B0B06E /* Assets.xcassets */,
+				34B9881BAB51BD143609E6AC /* Localizable.xcstrings */,
 				718B041EC76D7AC6B66CEB22 /* OpenInput.entitlements */,
+				F7AB416355B604006D208E29 /* InfoPlist.strings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -207,11 +214,12 @@
 				};
 			};
 			buildConfigurationList = D7F9FD0BCEA20955468652DF /* Build configuration list for PBXProject "OpenInput" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
+				"zh-Hans",
 			);
 			mainGroup = 1E049F47108595D5F4AF002C;
 			minimizedProjectReferenceProxies = 1;
@@ -234,6 +242,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				890E24C47B1D67F61D0AA983 /* Assets.xcassets in Resources */,
+				ACF5AC3CF50E460BA53DAA38 /* InfoPlist.strings in Resources */,
+				2B66314775AB60D21FD17683 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,6 +275,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		F7AB416355B604006D208E29 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				447501AB7BE7554E3BD1C63C /* en */,
+				433E7C7D3C18C1FDC344463A /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		01774D99D8995E2DE468AE8E /* Debug */ = {
@@ -338,11 +360,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OpenInput/Resources/OpenInput.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenInput/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.openinput;
 				PRODUCT_NAME = OpenInput;
 				SDKROOT = macosx;
@@ -413,11 +435,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OpenInput/Resources/OpenInput.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenInput/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.openinput;
 				PRODUCT_NAME = OpenInput;
 				SDKROOT = macosx;

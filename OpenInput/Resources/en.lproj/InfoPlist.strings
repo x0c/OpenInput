@@ -1,0 +1,2 @@
+"CFBundleDisplayName" = "OpenInput";
+"NSAccessibilityUsageDescription" = "OpenInput needs Accessibility permission to paste the edited text back into your original input field.";

@@ -1,7 +1,7 @@
 import AppKit
 import ApplicationServices
 
-/// Watches frontmost app / focused field and auto-shows OpenInput for remembered apps.
+/// 监听前台应用 / 聚焦输入框，对已记忆的应用自动弹出小窗。
 @MainActor
 final class AutoShowMonitor {
     static let shared = AutoShowMonitor()
@@ -13,7 +13,7 @@ final class AutoShowMonitor {
     private var pollTimer: Timer?
     private var clickMonitor: Any?
     private var suppressUntil: Date = .distantPast
-    /// Avoid re-opening for the same focus burst; cleared when focus leaves a text field.
+    /// 同一输入框的聚焦爆发不重复弹窗；焦点离开输入框后清空。
     private var lastTriggeredFocusSignature: String?
     private var wasInTextField = false
     private var pendingUserClick = false
@@ -44,7 +44,7 @@ final class AutoShowMonitor {
             }
         }
 
-        // Chrome often doesn't emit reliable AX blur/focus; clicks help detect re-focus.
+        // Chrome 经常不发可靠的 AX 失焦/聚焦通知，点击事件帮助识别重新聚焦。
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             Task { @MainActor in
                 self?.pendingUserClick = true
@@ -52,7 +52,7 @@ final class AutoShowMonitor {
             }
         }
 
-        // Chrome and many apps are unreliable with AX focus notifications alone.
+        // Chrome 及很多应用单独靠 AX 聚焦通知不可靠，轮询兜底。
         pollTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.evaluate()
@@ -174,7 +174,7 @@ final class AutoShowMonitor {
             return
         }
 
-        // Keep AX observer attached to the real front app.
+        // 保持 AX observer 附着在真正的前台应用上。
         if observedPID != app.processIdentifier {
             attach(to: app)
         }
@@ -193,13 +193,13 @@ final class AutoShowMonitor {
         let shouldTrigger: Bool
         if inTextField, let signature = focusInfo {
             if !wasInTextField {
-                // Entered a text field from non-field.
+                // 从非输入区进入输入框。
                 shouldTrigger = true
             } else if lastTriggeredFocusSignature != signature {
-                // Different field.
+                // 切换到了另一个输入框。
                 shouldTrigger = true
             } else if clicked, Date().timeIntervalSince(lastAutoShowAt) > 1.0 {
-                // Same field re-clicked (Chrome often skips AX blur).
+                // 同一输入框被再次点击（Chrome 常跳过 AX 失焦通知）。
                 shouldTrigger = true
             } else {
                 shouldTrigger = false
@@ -219,7 +219,7 @@ final class AutoShowMonitor {
         InputPanelController.shared.show(reason: .autoShow)
     }
 
-    /// Returns a stable signature for the focused text-like element, or nil if not text input.
+    /// 返回聚焦文本类元素的稳定签名；不是文本输入则返回 nil。
     private func focusedTextFieldInfo(pid: pid_t) -> String? {
         let appElement = AXUIElementCreateApplication(pid)
         var focusedRef: CFTypeRef?
@@ -227,12 +227,10 @@ final class AutoShowMonitor {
             appElement,
             kAXFocusedUIElementAttribute as CFString,
             &focusedRef
-        ) == .success, let focusedRef else {
-            return nil
-        }
+        ) == .success, let focusedRef else { return nil }
 
         var element = focusedRef as! AXUIElement
-        // Walk up a few ancestors — Chrome omnibox focus may land on an inner node.
+        // 向上追溯若干级祖先——Chrome 地址栏聚焦可能落在内层节点上。
         for _ in 0..<6 {
             if isTextLike(element) {
                 let role = stringAttribute(element, kAXRoleAttribute as String) ?? "?"
@@ -267,7 +265,7 @@ final class AutoShowMonitor {
         if textRoles.contains(role) { return true }
         if subrole == "AXSearchField" || subrole == "AXURL" { return true }
 
-        // Chrome omnibox / address bar heuristics.
+        // Chrome 地址栏启发式判断。
         let omniboxHints = ["address", "omnibox", "url", "搜索", "地址", "location"]
         if omniboxHints.contains(where: { desc.contains($0) || title.contains($0) }) {
             return true
@@ -275,7 +273,7 @@ final class AutoShowMonitor {
 
         if boolAttribute(element, "AXEditable") == true { return true }
 
-        // Has a selectable text range → almost certainly an editor/field.
+        // 存在可选中的文本区间 → 基本可以确定是编辑器 / 输入框。
         var rangeRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(
             element,
@@ -285,10 +283,10 @@ final class AutoShowMonitor {
             return true
         }
 
-        // String AXValue + focused often means a field (Chrome omnibox).
+        // 有字符串 AXValue 且处于聚焦态 → 通常是输入框（Chrome 地址栏）。
         if stringAttribute(element, kAXValueAttribute as String) != nil,
            textRoles.contains(role) || role == "AXGroup" || role.isEmpty {
-            // Only treat AXGroup as text-like when it also has insertion-related attrs.
+            // AXGroup 仅在同时具备插入相关属性时才视为文本类。
             if role != "AXGroup" { return true }
             if numberAttribute(element, kAXNumberOfCharactersAttribute as String) != nil {
                 return true
@@ -306,13 +304,15 @@ final class AutoShowMonitor {
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &ref) == .success,
               let ref else { return nil }
-        return (ref as! AXUIElement)
+        let parent = ref as! AXUIElement
+        return parent
     }
 
     private func elementOrigin(_ element: AXUIElement) -> CGPoint? {
         var posRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posRef) == .success,
-              let posRef, CFGetTypeID(posRef) == AXValueGetTypeID() else { return nil }
+              let posRef,
+              CFGetTypeID(posRef) == AXValueGetTypeID() else { return nil }
         var point = CGPoint.zero
         guard AXValueGetValue(posRef as! AXValue, .cgPoint, &point) else { return nil }
         return point

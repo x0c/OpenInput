@@ -1,6 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 
+/// 通过「激活目标应用 + ⌘V」把文本注入回原输入框。
 @MainActor
 final class TextInjector {
     static let shared = TextInjector()
@@ -14,9 +15,9 @@ final class TextInjector {
 
         var errorDescription: String? {
             switch self {
-            case .noTarget: return "未找到原先的输入应用"
-            case .accessibilityDenied: return "需要辅助功能权限才能自动粘贴"
-            case .emptyText: return "没有可插入的文本"
+            case .noTarget: return String(localized: "error.inject.noTarget")
+            case .accessibilityDenied: return String(localized: "error.inject.permission")
+            case .emptyText: return String(localized: "error.inject.empty")
             }
         }
     }
@@ -32,11 +33,11 @@ final class TextInjector {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        _ = target.activate(options: [.activateIgnoringOtherApps])
-
-        try await Task.sleep(nanoseconds: 120_000_000)
+        // 等待目标应用激活、输入框就绪后再发 ⌘V（macOS 14 起系统自行处理前台切换）。
+        _ = target.activate()
+        try await Task.sleep(for: .milliseconds(120))
         postCommandV()
-        try await Task.sleep(nanoseconds: 200_000_000)
+        try await Task.sleep(for: .milliseconds(200))
 
         pasteboard.clearContents()
         if let previousString {

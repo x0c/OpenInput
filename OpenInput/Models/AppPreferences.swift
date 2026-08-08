@@ -15,14 +15,15 @@ struct HistoryItem: Identifiable, Codable, Equatable, Hashable {
     var preview: String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.count <= 80 {
-            return trimmed.isEmpty ? "(空)" : trimmed
+            return trimmed.isEmpty ? String(localized: "history.item.empty") : trimmed
         }
         return String(trimmed.prefix(80)) + "…"
     }
 
+    /// 相对时间跟随系统语言，不写死中文。
     var relativeTime: String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .autoupdatingCurrent
         formatter.unitsStyle = .short
         return formatter.localizedString(for: createdAt, relativeTo: Date())
     }
@@ -42,14 +43,14 @@ enum BorderColorOption: String, CaseIterable, Identifiable, Codable {
 
     var displayName: String {
         switch self {
-        case .purple: return "紫色"
-        case .blue: return "蓝色"
-        case .cyan: return "青色"
-        case .orange: return "橙色"
-        case .red: return "红色"
-        case .pink: return "粉色"
-        case .gray: return "灰色"
-        case .black: return "黑色"
+        case .purple: return String(localized: "settings.color.purple")
+        case .blue: return String(localized: "settings.color.blue")
+        case .cyan: return String(localized: "settings.color.cyan")
+        case .orange: return String(localized: "settings.color.orange")
+        case .red: return String(localized: "settings.color.red")
+        case .pink: return String(localized: "settings.color.pink")
+        case .gray: return String(localized: "settings.color.gray")
+        case .black: return String(localized: "settings.color.black")
         }
     }
 
@@ -76,9 +77,9 @@ enum DefaultWindowSize: String, CaseIterable, Identifiable, Codable {
 
     var displayName: String {
         switch self {
-        case .compact: return "紧凑 360 × 140"
-        case .regular: return "标准 400 × 180"
-        case .large: return "较大 520 × 240"
+        case .compact: return String(localized: "settings.size.compact")
+        case .regular: return String(localized: "settings.size.regular")
+        case .large: return String(localized: "settings.size.large")
         }
     }
 
@@ -99,8 +100,8 @@ enum InsertionMethod: String, CaseIterable, Identifiable, Codable {
 
     var displayName: String {
         switch self {
-        case .paste: return "粘贴"
-        case .typing: return "模拟键入（二期）"
+        case .paste: return String(localized: "settings.insertion.paste")
+        case .typing: return String(localized: "settings.insertion.typing")
         }
     }
 }
@@ -109,6 +110,6 @@ struct CapturedFocus: Equatable {
     let processIdentifier: pid_t
     let bundleIdentifier: String?
     let appName: String?
-    /// Caret or focused-field rect in AppKit screen coordinates.
+    /// 光标或聚焦输入框在 AppKit 屏幕坐标系中的矩形。
     let anchorRect: CGRect?
 }

@@ -1,13 +1,14 @@
 import AppKit
-import Combine
 import SwiftUI
 
+/// 小窗输入面板的视图模型：编辑文本、历史浏览状态与回调。
 @MainActor
-final class InputPanelViewModel: ObservableObject {
-    @Published var text: String = ""
-    @Published var historyIndex: Int? = nil
-    @Published var showHistoryPopover: Bool = false
-    @Published var historyQuery: String = ""
+@Observable
+final class InputPanelViewModel {
+    var text: String = ""
+    var historyIndex: Int? = nil
+    var showHistoryPopover: Bool = false
+    var historyQuery: String = ""
 
     var onSubmit: (() -> Void)?
     var onCancel: (() -> Void)?
@@ -52,7 +53,7 @@ final class InputPanelViewModel: ObservableObject {
         if force {
             apply()
         }
-        DispatchQueue.main.async(execute: apply)
+        DispatchQueue.main.async { apply() }
     }
 
     func resetDraft() {
@@ -103,7 +104,7 @@ final class InputPanelViewModel: ObservableObject {
         focusEditor()
     }
 
-    /// Empty draft or already browsing: ↑ moves older. Also opens the list.
+    /// 草稿为空或已在浏览历史：↑ 向前翻，顺带打开列表。
     func handleHistoryUp() -> Bool {
         let items = filteredHistory
         guard !items.isEmpty else { return false }
@@ -130,7 +131,6 @@ final class InputPanelViewModel: ObservableObject {
 
     func handleHistoryDown() -> Bool {
         guard showHistoryPopover || historyIndex != nil else { return false }
-        let items = filteredHistory
         guard let index = historyIndex else { return false }
 
         if index == 0 {
@@ -179,9 +179,15 @@ final class InputPanelViewModel: ObservableObject {
 }
 
 struct InputPanelRootView: View {
-    @ObservedObject var viewModel: InputPanelViewModel
-    @ObservedObject private var preferences = PreferencesStore.shared
-    @ObservedObject private var history = HistoryStore.shared
+    private enum ActionFocus: Hashable {
+        case history
+        case close
+    }
+
+    let viewModel: InputPanelViewModel
+    private let preferences = PreferencesStore.shared
+    private let history = HistoryStore.shared
+    @FocusState private var focusedAction: ActionFocus?
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -196,16 +202,16 @@ struct InputPanelRootView: View {
                 InputTextViewRepresentable(viewModel: viewModel)
                     .padding(.horizontal, 10)
                     .padding(.top, viewModel.showHistoryPopover ? 4 : 10)
-                    .padding(.trailing, 18) // room so text doesn't sit under the floating ✕
+                    .padding(.trailing, 18) // 留出悬浮 ✕ 按钮的空间
                     .padding(.bottom, 4)
 
                 HStack(spacing: 10) {
-                    Text("字数: \(viewModel.characterCount)")
+                    Text("panel.characterCount \(viewModel.characterCount)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     if viewModel.historyIndex != nil {
-                        Text("历史 \( (viewModel.historyIndex ?? 0) + 1 )/\(max(viewModel.filteredHistory.count, 1))")
+                        Text("panel.historyIndicator \((viewModel.historyIndex ?? 0) + 1) \(max(viewModel.filteredHistory.count, 1))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -224,16 +230,28 @@ struct InputPanelRootView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .help("历史记录（↑↓）")
+                    .help("panel.history.shortcut")
+                    .padding(4)
+                    .background(
+                        Circle().fill(focusedAction == .history ? Color.accentColor.opacity(0.16) : .clear)
+                    )
+                    .overlay {
+                        Circle()
+                            .strokeBorder(focusedAction == .history ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
+                    }
+                    .focusEffectDisabled()
+                    .focused($focusedAction, equals: .history)
+                    .accessibilityLabel(Text("panel.history.accessibility.label"))
+                    .accessibilityHint(Text("panel.history.accessibility.hint"))
                     .disabled(history.items.isEmpty)
 
-                    Text("↩ 插入")
+                    Text("panel.hint.insert")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("⇧↩ 换行")
+                    Text("panel.hint.newline")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("esc 关闭")
+                    Text("panel.hint.close")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -251,8 +269,19 @@ struct InputPanelRootView: View {
                     .shadow(color: .black.opacity(0.12), radius: 1, y: 0.5)
             }
             .buttonStyle(.plain)
-            .help("关闭")
+            .help("panel.close")
             .padding(6)
+            .background(
+                Circle().fill(focusedAction == .close ? Color.accentColor.opacity(0.16) : .clear)
+            )
+            .overlay {
+                Circle()
+                    .strokeBorder(focusedAction == .close ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
+            }
+            .focusEffectDisabled()
+            .focused($focusedAction, equals: .close)
+            .accessibilityLabel(Text("panel.close"))
+            .accessibilityHint(Text("panel.close.accessibility.hint"))
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -263,7 +292,9 @@ struct InputPanelRootView: View {
 }
 
 struct HistoryPopoverView: View {
-    @ObservedObject var viewModel: InputPanelViewModel
+    @Bindable var viewModel: InputPanelViewModel
+    @FocusState private var searchFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 6) {
@@ -271,9 +302,13 @@ struct HistoryPopoverView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
                     .font(.caption)
-                TextField("搜索历史", text: $viewModel.historyQuery)
+                TextField("common.search.history", text: $viewModel.historyQuery)
                     .textFieldStyle(.plain)
                     .font(.caption)
+                    .focused($searchFocused)
+                    .focusEffectDisabled()
+                    .accessibilityLabel(Text("common.search.history"))
+                    .accessibilityHint(Text("panel.history.search.accessibility.hint"))
                 if !viewModel.historyQuery.isEmpty {
                     Button {
                         viewModel.historyQuery = ""
@@ -283,11 +318,21 @@ struct HistoryPopoverView: View {
                             .font(.caption)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Text("panel.history.clearSearch.accessibility.label"))
+                    .accessibilityHint(Text("panel.history.clearSearch.accessibility.hint"))
                 }
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+            // 自有焦点态：键盘导航聚焦时描边提示，替代系统蓝色焦点框。
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(
+                        searchFocused ? Color.accentColor.opacity(0.65) : .clear,
+                        lineWidth: 1.5
+                    )
+            )
 
             ScrollViewReader { proxy in
                 ScrollView {
@@ -306,7 +351,7 @@ struct HistoryPopoverView: View {
                 .onChange(of: viewModel.historyIndex) { _, newValue in
                     guard let newValue,
                           viewModel.filteredHistory.indices.contains(newValue) else { return }
-                    withAnimation(.easeInOut(duration: 0.12)) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.12)) {
                         proxy.scrollTo(viewModel.filteredHistory[newValue].id, anchor: .center)
                     }
                 }
@@ -321,6 +366,7 @@ private struct HistoryRow: View {
     let item: HistoryItem
     let isSelected: Bool
     let onSelect: () -> Void
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         Button(action: onSelect) {
@@ -344,14 +390,22 @@ private struct HistoryRow: View {
                 RoundedRectangle(cornerRadius: 5)
                     .fill(isSelected ? Color.accentColor.opacity(0.22) : Color.clear)
             )
+            .overlay {
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(isFocused ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .accessibilityLabel(Text(item.preview))
+        .accessibilityHint(Text("panel.history.item.accessibility.hint"))
     }
 }
 
 struct InputTextViewRepresentable: NSViewRepresentable {
-    @ObservedObject var viewModel: InputPanelViewModel
+    var viewModel: InputPanelViewModel
 
     func makeCoordinator() -> Coordinator {
         Coordinator(viewModel: viewModel)
@@ -383,6 +437,8 @@ struct InputTextViewRepresentable: NSViewRepresentable {
         textView.isHorizontallyResizable = false
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.lineFragmentPadding = 2
+        textView.setAccessibilityLabel(String(localized: "panel.editor.accessibility.label"))
+        textView.setAccessibilityHelp(String(localized: "panel.editor.accessibility.hint"))
 
         context.coordinator.textView = textView
         viewModel.bind(textView: textView)
@@ -414,6 +470,7 @@ struct InputTextViewRepresentable: NSViewRepresentable {
         }
 
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            // 输入法组合中不拦截按键，交给输入法。
             if textView.hasMarkedText() {
                 return false
             }

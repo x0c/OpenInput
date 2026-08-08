@@ -2,26 +2,30 @@ import SwiftUI
 import AppKit
 
 struct AutoShowSettingsView: View {
-    @ObservedObject private var memory = AppMemoryStore.shared
+    @State private var memory = AppMemoryStore.shared
     @State private var accessibilityTrusted = AccessibilityPermission.isTrusted
 
     var body: some View {
+        @Bindable var memory = memory
+
         VStack(spacing: 0) {
             Form {
                 Section {
-                    Toggle("启用应用记忆自动打开", isOn: $memory.autoShowMasterEnabled)
-                    Text("在某个 App 里用 OpenInput 成功插入过文本后，下次在该 App 的输入框聚焦时会自动打开小窗；若你主动关闭（esc / ✕），则不再自动打开。")
+                    Toggle("settings.autoshow.enable", isOn: $memory.autoShowMasterEnabled)
+                    Text("settings.autoshow.description")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                Section("辅助功能") {
+                Section("settings.autoshow.permission") {
                     HStack {
                         Image(systemName: accessibilityTrusted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                             .foregroundStyle(accessibilityTrusted ? .green : .orange)
-                        Text(accessibilityTrusted ? "已授权（自动打开需要此权限）" : "未授权 — 无法检测输入框")
+                        Text(accessibilityTrusted
+                            ? "settings.autoshow.permission.granted"
+                            : "settings.autoshow.permission.denied")
                         Spacer()
-                        Button("打开系统设置…") {
+                        Button("settings.accessibility.open_settings") {
                             AccessibilityPermission.openSystemSettings()
                             accessibilityTrusted = AccessibilityPermission.isTrusted
                         }
@@ -32,10 +36,10 @@ struct AutoShowSettingsView: View {
             .padding([.horizontal, .top])
 
             HStack {
-                Text("已记忆的应用")
+                Text("settings.autoshow.remembered")
                     .font(.headline)
                 Spacer()
-                Button("清空") {
+                Button("settings.autoshow.clear") {
                     memory.clear()
                 }
                 .disabled(memory.apps.isEmpty)
@@ -45,9 +49,9 @@ struct AutoShowSettingsView: View {
 
             if memory.apps.isEmpty {
                 ContentUnavailableView(
-                    "暂无记忆",
+                    "settings.autoshow.empty.title",
                     systemImage: "app.badge.checkmark",
-                    description: Text("在任意 App 中用小窗插入一次文本后，会出现在这里")
+                    description: Text("settings.autoshow.empty.description")
                 )
             } else {
                 List {
@@ -65,15 +69,15 @@ struct AutoShowSettingsView: View {
                                     .lineLimit(1)
                             }
                             Spacer()
-                            Toggle("自动打开", isOn: Binding(
+                            Toggle("settings.autoshow.toggle", isOn: Binding(
                                 get: { app.autoShow },
                                 set: { memory.setAutoShow(bundleIdentifier: app.bundleIdentifier, enabled: $0) }
                             ))
                             .labelsHidden()
-                            .help(app.autoShow ? "自动打开中" : "已关闭自动打开")
+                            .help(app.autoShow ? "settings.autoshow.on" : "settings.autoshow.off")
                         }
                         .contextMenu {
-                            Button("移除记忆", role: .destructive) {
+                            Button("settings.autoshow.remove", role: .destructive) {
                                 memory.remove(bundleIdentifier: app.bundleIdentifier)
                             }
                         }
@@ -87,6 +91,10 @@ struct AutoShowSettingsView: View {
             if accessibilityTrusted {
                 AutoShowMonitor.shared.start()
             }
+        }
+        // 用户从系统设置返回后自动重检授权状态。
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            accessibilityTrusted = AccessibilityPermission.isTrusted
         }
     }
 

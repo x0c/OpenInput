@@ -2,8 +2,7 @@ import AppKit
 import Foundation
 import ServiceManagement
 
-/// Login-item registration that works for both signed installs (SMAppService)
-/// and ad-hoc / DerivedData builds (LaunchAgent fallback).
+/// 登录项注册：签名安装走 SMAppService，ad-hoc / DerivedData 构建回退到 LaunchAgent。
 enum LaunchAtLoginService {
     private static let agentLabel = "com.x0c.openinput.launchagent"
     private static var agentPlistURL: URL {
@@ -52,26 +51,26 @@ enum LaunchAtLoginService {
         }
     }
 
-    /// Keep LaunchAgent executable path fresh after DerivedData rebuilds.
-    /// Never auto-reinstall agents for ad-hoc Debug builds — that can spawn many hung copies.
+    /// DerivedData 重建后保持 LaunchAgent 可执行路径新鲜。
+    /// 绝不替 ad-hoc Debug 构建自动重装 agent——那会孵化出多个卡死的副本。
     static func refreshIfNeeded(preferenceEnabled: Bool) {
         guard preferenceEnabled else { return }
         if SMAppService.mainApp.status == .enabled { return }
-        // Only refresh an existing LaunchAgent path; do not create new ones in the background.
+        // 只刷新已存在的 LaunchAgent 路径，不在后台新建。
         guard launchAgentInstalled else { return }
         _ = try? installLaunchAgent()
     }
 
     private static func enable() throws {
-        // Prefer ServiceManagement. Avoid LaunchAgent fallback for unsigned Debug builds —
-        // they hang easily and KeepAlive-less agents still leave zombie Dock tiles.
+        // 优先 ServiceManagement；未签名 Debug 构建的 LaunchAgent 回退很容易挂死，
+        // 且无 KeepAlive 的 agent 会留下僵尸 Dock 图标。
         let smStatus = SMAppService.mainApp.status
         if smStatus != .notFound {
             try SMAppService.mainApp.register()
             removeLaunchAgentQuietly()
             return
         }
-        // Debug / ad-hoc: still allow LaunchAgent but only when user explicitly toggles on.
+        // Debug / ad-hoc：仅当用户显式打开开关时才允许 LaunchAgent。
         try installLaunchAgent()
     }
 
@@ -141,7 +140,7 @@ enum LaunchAtLoginService {
         case missingExecutable
 
         var errorDescription: String? {
-            "找不到应用可执行文件"
+            String(localized: "error.launch.missingExecutable")
         }
     }
 }

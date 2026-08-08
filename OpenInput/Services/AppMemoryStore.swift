@@ -1,6 +1,6 @@
 import Foundation
-import AppKit
-import Combine
+import Observation
+import os
 
 struct RememberedApp: Identifiable, Codable, Equatable, Hashable {
     var id: String { bundleIdentifier }
@@ -10,36 +10,50 @@ struct RememberedApp: Identifiable, Codable, Equatable, Hashable {
     var updatedAt: Date
 }
 
-/// Remembers which apps should auto-open the input panel.
-/// - Successful insert → enable auto-show for that app
-/// - Active close (esc / ✕ / hotkey hide) → disable auto-show for that app
+/// 按应用记忆自动打开行为。
+/// - 成功插入文本 → 开启该应用的自动打开
+/// - 主动关闭（esc / ✕ / 热键隐藏）→ 关闭该应用的自动打开
 @MainActor
-final class AppMemoryStore: ObservableObject {
+@Observable
+final class AppMemoryStore {
     static let shared = AppMemoryStore()
 
-    @Published private(set) var apps: [RememberedApp] = []
+    private(set) var apps: [RememberedApp] = []
 
-    @Published var autoShowMasterEnabled: Bool {
-        didSet { defaults.set(autoShowMasterEnabled, forKey: Keys.master) }
+    var autoShowMasterEnabled: Bool {
+        didSet { defaults.set(autoShowMasterEnabled, forKey: AppMemoryKeys.autoShowMaster) }
     }
 
     private let defaults = UserDefaults.standard
     private let fileURL: URL
+    private let logger = Logger(subsystem: "com.x0c.openinput", category: "AppMemoryStore")
 
-    private enum Keys {
-        static let master = "autoShowMasterEnabled"
+    /// 偏好键与默认值成对集中声明。
+    private enum AppMemoryKeys {
+        static let autoShowMaster = "appMemory.autoShowMaster"
+        static let autoShowMasterDefault = true
+
+        static let legacyAutoShowMaster = "autoShowMasterEnabled"
     }
 
     private init() {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        // 旧键名迁移：读到旧值写入新键并删除旧键。
+        if defaults.object(forKey: AppMemoryKeys.autoShowMaster) == nil,
+           let legacy = defaults.object(forKey: AppMemoryKeys.legacyAutoShowMaster) {
+            defaults.set(legacy, forKey: AppMemoryKeys.autoShowMaster)
+            defaults.removeObject(forKey: AppMemoryKeys.legacyAutoShowMaster)
+        }
+
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
         let dir = support.appendingPathComponent("OpenInput", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         fileURL = dir.appendingPathComponent("app-memory.json")
 
-        if defaults.object(forKey: Keys.master) == nil {
-            autoShowMasterEnabled = true
+        if defaults.object(forKey: AppMemoryKeys.autoShowMaster) == nil {
+            autoShowMasterEnabled = AppMemoryKeys.autoShowMasterDefault
         } else {
-            autoShowMasterEnabled = defaults.bool(forKey: Keys.master)
+            autoShowMasterEnabled = defaults.bool(forKey: AppMemoryKeys.autoShowMaster)
         }
         load()
     }
@@ -49,7 +63,7 @@ final class AppMemoryStore: ObservableObject {
         return apps.first(where: { $0.bundleIdentifier == bundleIdentifier })?.autoShow == true
     }
 
-    /// Called after user successfully used OpenInput to insert text into an app.
+    /// 用户成功用 OpenInput 向某个应用插入文本后调用。
     func rememberUsed(bundleIdentifier: String?, appName: String?) {
         guard let bundleIdentifier, !bundleIdentifier.isEmpty else { return }
         upsert(
@@ -59,7 +73,7 @@ final class AppMemoryStore: ObservableObject {
         )
     }
 
-    /// Called when user actively dismisses the panel for a captured app.
+    /// 用户主动关闭小窗后调用。
     func rememberDismissed(bundleIdentifier: String?, appName: String?) {
         guard let bundleIdentifier, !bundleIdentifier.isEmpty else { return }
         upsert(
@@ -107,13 +121,22 @@ final class AppMemoryStore: ObservableObject {
     }
 
     private func load() {
-        guard let data = try? Data(contentsOf: fileURL),
-              let decoded = try? JSONDecoder().decode([RememberedApp].self, from: data) else { return }
-        apps = decoded.sorted { $0.updatedAt > $1.updatedAt }
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            apps = try JSONDecoder().decode([RememberedApp].self, from: data).sorted { $0.updatedAt > $1.updatedAt }
+        } catch {
+            // 文件损坏时不崩溃、不清空原文件，回退到空记忆。
+            logger.error("读取应用记忆失败，回退为空列表：\(error.localizedDescription)")
+        }
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(apps) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+        do {
+            let data = try JSONEncoder().encode(apps)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            logger.error("保存应用记忆失败：\(error.localizedDescription)")
+        }
     }
 }

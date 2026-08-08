@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 
+/// 记录焦点捕获：目标应用 + 输入锚点。
 @MainActor
 final class FocusTracker {
     static let shared = FocusTracker()
@@ -9,8 +10,8 @@ final class FocusTracker {
 
     private init() {}
 
-    /// Capture focused app + input anchor. Uses system-wide AX focused element first
-    /// (IndieSeek / Paste Switch approach), then falls back to field frame / mouse.
+    /// 捕获当前焦点应用与输入锚点。优先取系统级 AX 聚焦元素
+    ///（Chrome 地址栏时序最稳），再回退到字段矩形 / 鼠标位置。
     func captureFrontmost() {
         guard let app = resolveTargetApplication() else { return }
         let anchor = resolveAnchorRect(pid: app.processIdentifier)
@@ -65,43 +66,39 @@ final class FocusTracker {
         return NSRunningApplication(processIdentifier: pid)
     }
 
-    // MARK: - Anchor (AX top-left → AppKit bottom-left)
+    // MARK: - 锚点坐标（AX 左上原点 → AppKit 左下原点）
 
     private func resolveAnchorRect(pid: pid_t) -> CGRect? {
         guard AccessibilityPermission.isTrusted else {
             return mouseFallbackCocoa()
         }
 
-        // 1) System-wide focused element (best for Chrome omnibox timing).
+        // 1) 系统级聚焦元素（Chrome 地址栏时序最好）。
         let systemWide = AXUIElementCreateSystemWide()
         var focusedRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(
             systemWide,
             kAXFocusedUIElementAttribute as CFString,
             &focusedRef
-        ) == .success, let focusedRef {
-            if let rect = anchorFromElement(focusedRef as! AXUIElement) {
-                return rect
-            }
+        ) == .success, let focusedRef, let rect = anchorFromElement(focusedRef as! AXUIElement) {
+            return rect
         }
 
-        // 2) Focused element of the target app.
+        // 2) 目标应用自己的聚焦元素。
         let appElement = AXUIElementCreateApplication(pid)
         focusedRef = nil
         if AXUIElementCopyAttributeValue(
             appElement,
             kAXFocusedUIElementAttribute as CFString,
             &focusedRef
-        ) == .success, let focusedRef {
-            if let rect = anchorFromElement(focusedRef as! AXUIElement) {
-                return rect
-            }
+        ) == .success, let focusedRef, let rect = anchorFromElement(focusedRef as! AXUIElement) {
+            return rect
         }
 
         return mouseFallbackCocoa()
     }
 
-    /// Decision tree: caret bounds → element frame (walk parents) → nil.
+    /// 判定树：光标边界 → 元素矩形（向上追溯父级）→ nil。
     private func anchorFromElement(_ start: AXUIElement) -> CGRect? {
         var element = start
         for _ in 0..<8 {
@@ -126,6 +123,7 @@ final class FocusTracker {
         return nil
     }
 
+    /// 超宽输入框（如 Chrome 地址栏）把锚点收敛到鼠标附近的小矩形。
     private func pinchWide(_ rect: CGRect) -> CGRect {
         let mouse = NSEvent.mouseLocation
         guard rect.width > 280 else { return rect }
@@ -179,7 +177,8 @@ final class FocusTracker {
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &ref) == .success,
               let ref else { return nil }
-        return (ref as! AXUIElement)
+        let parent = ref as! AXUIElement
+        return parent
     }
 
     private func stringValue(_ element: AXUIElement, _ name: String) -> String? {
@@ -194,7 +193,7 @@ final class FocusTracker {
         return CGRect(x: mouse.x, y: mouse.y - 8, width: 2, height: 16)
     }
 
-    /// Accessibility uses top-left global coords; AppKit uses bottom-left.
+    /// 辅助功能坐标是左上原点，AppKit 是左下原点。
     private func axToCocoa(_ axRect: CGRect) -> CGRect {
         let maxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
         return CGRect(

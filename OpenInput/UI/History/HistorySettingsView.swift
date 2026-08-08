@@ -2,9 +2,10 @@ import AppKit
 import SwiftUI
 
 struct HistorySettingsView: View {
-    @ObservedObject private var store = HistoryStore.shared
+    @State private var store = HistoryStore.shared
     @State private var query = ""
     @State private var selection = Set<HistoryItem.ID>()
+    @FocusState private var searchFocused: Bool
 
     private var filtered: [HistoryItem] {
         store.filtered(query: query)
@@ -13,9 +14,24 @@ struct HistorySettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                TextField("搜索历史", text: $query)
-                    .textFieldStyle(.roundedBorder)
-                Button("清空全部", role: .destructive) {
+                TextField("common.search.history", text: $query)
+                    .textFieldStyle(.plain)
+                    .focused($searchFocused)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    // 自有焦点态：聚焦时描边提示，替代系统蓝色焦点框。
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(
+                                searchFocused ? Color.accentColor.opacity(0.65) : Color.clear,
+                                lineWidth: 1.5
+                            )
+                    )
+                Button("history.clear.all", role: .destructive) {
                     store.clear()
                     selection.removeAll()
                 }
@@ -25,9 +41,11 @@ struct HistorySettingsView: View {
 
             if filtered.isEmpty {
                 ContentUnavailableView(
-                    store.items.isEmpty ? "暂无历史" : "无匹配结果",
+                    store.items.isEmpty ? "history.empty.title" : "history.empty.noMatch",
                     systemImage: "clock",
-                    description: Text(store.items.isEmpty ? "插入过的文本会出现在这里" : "试试其他关键词")
+                    description: Text(store.items.isEmpty
+                        ? "history.empty.description"
+                        : "history.empty.noMatch.description")
                 )
             } else {
                 List(selection: $selection) {
@@ -41,11 +59,11 @@ struct HistorySettingsView: View {
                         }
                         .tag(item.id)
                         .contextMenu {
-                            Button("复制") {
+                            Button("common.copy") {
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(item.text, forType: .string)
                             }
-                            Button("删除", role: .destructive) {
+                            Button("common.delete", role: .destructive) {
                                 store.delete(item.id)
                                 selection.remove(item.id)
                             }
@@ -61,14 +79,14 @@ struct HistorySettingsView: View {
             }
 
             HStack {
-                Text("共 \(store.items.count) 条")
+                Text("history.footer.count \(store.items.count)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("⌘⌫ 删除所选")
+                Text("history.delete.shortcut")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
-                Button("删除所选", role: .destructive) {
+                Button("history.delete.selected", role: .destructive) {
                     selection.forEach { store.delete($0) }
                     selection.removeAll()
                 }

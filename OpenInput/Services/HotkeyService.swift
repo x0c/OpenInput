@@ -1,13 +1,14 @@
-import AppKit
+import Foundation
 import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
     static let togglePanel = Self("togglePanel", default: .init(.i, modifiers: [.option, .command]))
 }
 
-/// Hotkey callbacks arrive from Carbon on the main run-loop thread, but not under
-/// Swift's MainActor executor. Avoid `Task { @MainActor }` here — it crashes on
-/// recent Swift/macOS (SIGSEGV in swift_task_isMainExecutor).
+/// 热键回调由 Carbon 在主 run-loop 线程派发，但不一定处于 Swift 的 MainActor
+/// executor 之下，所以这里不直接用 `Task { @MainActor }`——在较新的
+/// Swift/macOS 上会以 SIGSEGV 崩溃（swift_task_isMainExecutor），统一走
+/// DispatchQueue.main 再进入业务层。
 final class HotkeyService: @unchecked Sendable {
     static let shared = HotkeyService()
 

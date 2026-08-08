@@ -6,20 +6,20 @@ struct OpenInputApp: App {
 
     var body: some Scene {
         MenuBarExtra("OpenInput", systemImage: "text.cursor") {
-            Button("显示输入小窗") {
+            Button("menu.show.panel") {
                 InputPanelController.shared.show()
             }
 
             Divider()
 
             SettingsLink {
-                Text("设置…")
+                Text("menu.settings")
             }
 
             Divider()
 
-            Button("退出 OpenInput") {
-                NSApplication.shared.terminate(nil)
+            Button("menu.quit") {
+                (NSApp.delegate as? AppDelegate)?.requestTermination()
             }
         }
 
