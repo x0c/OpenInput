@@ -16,7 +16,7 @@ Display name: **智能输入小窗**
 
 ## Install
 
-Download the latest `OpenInput-*.dmg` from the [Releases page](https://github.com/x0c/OpenInput/releases), open it, and drag OpenInput to Applications. The app is signed and notarized by Apple. Future versions are offered inside the app automatically.
+Download the latest `OpenInput-*.dmg` from the [macOS downloads page](https://github.com/x0c/OpenInput-updates/releases), open it, and drag OpenInput to Applications. The app is signed and notarized by Apple. Future versions are offered inside the app automatically.
 
 Requirements: macOS 14+.
 
