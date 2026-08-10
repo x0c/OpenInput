@@ -99,7 +99,18 @@ printf 'OpenInput %s\n\n- 正式提供已签名、公证的安装包与应用内
 "${sparkle_dir}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/" "${updates_dir}"
 
 step "发布公开更新包和首装镜像"
-gh release create "v${version}" "${updates_dir}/OpenInput-${version}.zip" --repo "${UPDATE_REPOSITORY}" --title "OpenInput ${version}" --notes "OpenInput ${version} 自动更新包。" || gh release upload "v${version}" "${updates_dir}/OpenInput-${version}.zip" --repo "${UPDATE_REPOSITORY}" --clobber
+# 同一版本可安全重跑：已经存在的公开资产先复用并在最后做匿名下载验证，
+# 不重复上传，以免慢链路空耗时间或触发平台的“文件已存在”错误。
+if ! gh release view "v${version}" --repo "${UPDATE_REPOSITORY}" >/dev/null 2>&1; then
+  gh release create "v${version}" "${updates_dir}/OpenInput-${version}.zip" "${dmg_path}" --repo "${UPDATE_REPOSITORY}" --title "OpenInput ${version}" --notes "OpenInput ${version} 自动更新包和已公证安装镜像。"
+else
+  for asset_path in "${updates_dir}/OpenInput-${version}.zip" "${dmg_path}"; do
+    asset_name="$(basename "${asset_path}")"
+    if ! gh release view "v${version}" --repo "${UPDATE_REPOSITORY}" --json assets --jq '.assets[].name' | grep -qx "${asset_name}"; then
+      gh release upload "v${version}" "${asset_path}" --repo "${UPDATE_REPOSITORY}"
+    fi
+  done
+fi
 gh repo clone "${UPDATE_REPOSITORY}" "${update_checkout}" -- --depth 1
 cp "${updates_dir}/appcast.xml" "${update_checkout}/appcast.xml"
 (cd "${update_checkout}" && git add appcast.xml && git commit -m "发布 OpenInput ${version} 更新清单" && git push)
@@ -113,5 +124,5 @@ gh release create "v${version}" "${dmg_path}" --repo x0c/OpenInput --title "Open
 step "匿名下载验收"
 curl -fsSL "https://raw.githubusercontent.com/${UPDATE_REPOSITORY}/main/appcast.xml" -o /dev/null
 curl -fsSL "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.zip" -o /dev/null
-curl -fsSL "https://github.com/x0c/OpenInput/releases/download/v${version}/OpenInput-${version}.dmg" -o /dev/null
+curl -fsSL "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.dmg" -o /dev/null
 printf '发布完成：v%s（内部构建号 %s）\n' "${version}" "${build_number}"
