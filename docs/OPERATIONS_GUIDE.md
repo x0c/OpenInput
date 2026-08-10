@@ -96,16 +96,15 @@ log show --last 30m --predicate 'subsystem == "com.x0c.openinput"' --style compa
 
 ## 5. 发布
 
-发布命令（本地签名 + 公证可选；发布流程由脚本或手动完成）。
+OpenInput 是正式自分发应用：公开 Release 的 DMG 用于第一次安装，应用内更新使用独立公开更新仓里的签名 ZIP 和更新清单。**改发布、签名、公证、更新源或版本号前必须先读**工作区《签名、公证与分发指南》，否则可能发出无法打开或无法自动更新的版本。
 
-- 当前版本的版本号维护在 `project.yml`（`MARKETING_VERSION`）+ Info.plist。
-- 生成 Xcode 工程后构建 Release：
-  ```bash
-  xcodegen generate
-  xcodebuild -scheme OpenInput -configuration Release -derivedDataPath .build/release build
-  ```
+发布前在 `project.yml` 同时提升展示版本和严格递增的内部构建号；然后运行：
 
-> 暂未接入 GitHub Actions / 公证自动流程；手工发布收尾（打包 dmg / 上传）属于工程外操作。
+```bash
+scripts/publish-release.sh
+```
+
+脚本会完成 Developer ID 归档导出、签名校验、苹果公证、票据装订、DMG 制作、Sparkle 更新包与清单签名、源码仓和公开更新仓发布，以及匿名下载检查。公证处于苹果侧排队时必须让脚本在可脱离会话的后台进程中继续运行，并保留日志和提交编号；不得把“已提交”表述成“已公证”。
 
 ## 6. 常见问题（FAQ）
 
@@ -119,7 +118,6 @@ log show --last 30m --predicate 'subsystem == "com.x0c.openinput"' --style compa
 
 ## 7. 待补充
 
-- 公证（notarize）与 DK 签名流程尚未在本项目执行过，先加入开发者团队后再补。
 - macOS 各版本窗口层级差别（`.floating` 在成组空间/全屏的实测）。
 
 <!-- 该文档由 doc-init 生成于 2026-08-08；定位：AI 涉及构建、启动、日志排查、运行验证时的操作手册 -->

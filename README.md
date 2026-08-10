@@ -14,13 +14,13 @@ Display name: **智能输入小窗**
 - Resizable panel with remembered size, border color, opacity
 - Launch at login (optional)
 
-## Requirements
+## Install
 
-- macOS 14+
-- Xcode 16+
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+Download the latest `OpenInput-*.dmg` from the [Releases page](https://github.com/x0c/OpenInput/releases), open it, and drag OpenInput to Applications. The app is signed and notarized by Apple. Future versions are offered inside the app automatically.
 
-## Build
+Requirements: macOS 14+.
+
+## Build from source
 
 ```bash
 git clone https://github.com/x0c/OpenInput.git

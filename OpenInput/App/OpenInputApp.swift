@@ -16,6 +16,10 @@ struct OpenInputApp: App {
                 Text("menu.settings")
             }
 
+            Button("menu.checkForUpdates") {
+                (NSApp.delegate as? AppDelegate)?.checkForUpdates()
+            }
+
             Divider()
 
             Button("menu.quit") {

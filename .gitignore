@@ -1,9 +1,15 @@
 .DS_Store
 build/
 DerivedData/
+.build/
+.doc-init-dd/
+.codebase-memory/
+.doc-init-*.json
 *.xcuserstate
 xcuserdata/
 .swiftpm/
 *.swp
 *~
 .idea/
+release-logs/
+tmp/

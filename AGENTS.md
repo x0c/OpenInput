@@ -4,11 +4,11 @@ macOS 原生悬浮输入面板应用：为单行输入框（地址栏、聊天�
 
 ## 当前交付边界与数据处理
 
-**本应用当前仅供本机个人使用，不对外分发。**因此按工作区《macOS 应用标准基线》A1 的「纯自用、不对外分发」条件，当前可豁免应用内更新、公证与对外安装包；本机构建产物仍应保持可签名。不得把此豁免解释成已经具备可向他人交付的安装、更新或公开发布能力。
+**本应用以 Developer ID 自分发方式正式对外发布。**首次安装必须从公开 Release 下载已签名、公证并装订票据的拖拽安装镜像；已安装用户必须通过 Sparkle 的公开更新源获取经过 EdDSA 签名的更新包。不得把构建目录里的应用、裸压缩包或未公证产物当作可交付版本。
 
 - 保存的数据：成功注入的历史文本、应用自动弹出记忆，以及窗口和功能偏好；均仅保存于这台 Mac 的本地存储，用户可在应用设置中管理历史和应用记忆。
 - 当前未发现的行为：不上传或同步上述内容，也不建立网络连接。辅助功能权限只用于识别目标输入位置和将用户确认的文本粘贴回目标应用；若后续增加网络、同步、遥测、账号或第三方服务，必须先重新核对这段说明与隐私声明，不能沿用「纯本机」结论。
-- 若未来首次交付给他人：**必须先读并落实** [签名、公证与分发指南](../_standards/workspace-docs/swift-docs/macos-signing-notarization-distribution.md)——自行分发须完成 Developer ID 签名、公证及可获得的安全更新路径；若改走 Mac App Store，则按商店更新路径验收。同时重新按实际数据收集、辅助功能权限与第三方依赖核对隐私说明和 macOS 基线，完成真实安装与升级验证后才能公开。现有操作说明里的发布段落只记录未来准备路径，不代表当前已经具备对外分发能力。
+- 改发布、签名、公证、更新源或版本号前，**必须先读并落实** [签名、公证与分发指南](../_standards/workspace-docs/swift-docs/macos-signing-notarization-distribution.md)，否则会发出无法安装或无法更新的版本。发布由 `scripts/publish-release.sh` 统一执行：它归档并导出 Developer ID 应用、提交公证、装订票据、制作 DMG、生成 Sparkle 更新清单、发布到公开更新仓，并以匿名下载复核。版本展示号和内部构建号同时递增；内部构建号是更新判定的权威。
 
 通用工程规范：[Swift 规范](../_standards/swift.md)
 
@@ -42,7 +42,8 @@ xcodebuild -scheme OpenInput -configuration Debug -derivedDataPath .doc-init-dd 
 - `docs/HISTORY_KNOWLEDGE_BASE.md`：历史记录持久化、去重置顶、搜索过滤、小窗内历史浏览与设置页管理
 - `docs/PREFERENCES_KNOWLEDGE_BASE.md`：偏好存储与旧键迁移、登录启动注册（SMAppService/LaunchAgent）、设置页各页签
 - `docs/ACCESSIBILITY_GUIDE.md`：辅助功能（AX）机制——权限检查、坐标转换、Observer 生命周期；改焦点/自动弹出/注入相关代码时必读
-- `docs/OPERATIONS_GUIDE.md`：构建、安装、启动、日志与运行验证套路
+- `docs/OPERATIONS_GUIDE.md`：构建、安装、启动、日志、正式发布与运行验证套路
+- `docs/APP_ICON_DESIGN.md`：生成、修改或评审应用图标前必读，避免图标退化为常见便笺样式并保持小尺寸识别度
 
 ## 领域地图（doc-init）
 

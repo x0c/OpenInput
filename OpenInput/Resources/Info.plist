@@ -32,5 +32,9 @@
 	<string>Copyright © 2026 x0c</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/x0c/OpenInput-updates/raw/refs/heads/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>BuNZQqosY0Ro5noXRLDCoO1X7nkpEzZ0Kr6itZLcge0=</string>
 </dict>
 </plist>

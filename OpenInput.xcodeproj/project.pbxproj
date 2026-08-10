@@ -14,6 +14,7 @@
 		2B66314775AB60D21FD17683 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 34B9881BAB51BD143609E6AC /* Localizable.xcstrings */; };
 		33ECC3EDE488D96B9740776D /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F43C28B4FB00D6EF7F47759 /* LaunchAtLoginService.swift */; };
 		356CD141AC1C95A827B4E1ED /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA29D0CD29819FBFEDEB468F /* SettingsView.swift */; };
+		36CD59862EDD93330953C911 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 47BA77B0737A38004390AEEF /* Sparkle */; };
 		418D4FC25E728887795AB9F7 /* AccessibilityPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650A44B9B1FDF3D1720DA34E /* AccessibilityPermission.swift */; };
 		447B34FD44479F7C86232F00 /* AutoShowMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFD168E7E9F72B73533F214E /* AutoShowMonitor.swift */; };
 		623AE45E596F6F931BFA68AD /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76EE3B0D903F2444520D2FCE /* HistoryStore.swift */; };
@@ -62,6 +63,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0D9AF16E9F26F72567CD5C30 /* KeyboardShortcuts in Frameworks */,
+				36CD59862EDD93330953C911 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,6 +196,7 @@
 			name = OpenInput;
 			packageProductDependencies = (
 				0A74D822EA223B654224F337 /* KeyboardShortcuts */,
+				47BA77B0737A38004390AEEF /* Sparkle */,
 			);
 			productName = OpenInput;
 			productReference = A40E3971F82BDE44D73FAE38 /* OpenInput.app */;
@@ -208,9 +211,6 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					E2C35A70D2BA63A04831F020 = {
-						ProvisioningStyle = Automatic;
-					};
 				};
 			};
 			buildConfigurationList = D7F9FD0BCEA20955468652DF /* Build configuration list for PBXProject "OpenInput" */;
@@ -225,6 +225,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				BF9483FD9B399BF90BC0E6CC /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				65D6C9F73982858D8FA18A35 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3F66B8D07E69A5E759DDA7B4 /* Products */;
@@ -325,7 +326,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -360,11 +361,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OpenInput/Resources/OpenInput.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenInput/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.openinput;
 				PRODUCT_NAME = OpenInput;
 				SDKROOT = macosx;
@@ -404,9 +405,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = SHZQ3MWP3B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -421,6 +425,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -435,11 +440,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OpenInput/Resources/OpenInput.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenInput/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.openinput;
 				PRODUCT_NAME = OpenInput;
 				SDKROOT = macosx;
@@ -470,6 +475,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		65D6C9F73982858D8FA18A35 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.4;
+			};
+		};
 		BF9483FD9B399BF90BC0E6CC /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
@@ -485,6 +498,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BF9483FD9B399BF90BC0E6CC /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
 			productName = KeyboardShortcuts;
+		};
+		47BA77B0737A38004390AEEF /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 65D6C9F73982858D8FA18A35 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

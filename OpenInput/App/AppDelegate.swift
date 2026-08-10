@@ -1,8 +1,15 @@
 import AppKit
+import Sparkle
 import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// 必须强持有更新控制器，否则自动检查会在启动后失效。
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
     /// 只有用户主动点击「退出」才放行，防止系统在 macOS 26 下
     /// 因菜单栏可见性变化等场景顺手终止菜单栏应用。
     private var allowTermination = false
@@ -37,5 +44,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func requestTermination() {
         allowTermination = true
         NSApplication.shared.terminate(nil)
+    }
+
+    /// 用户主动检查更新时由菜单调用，下载与安装交给系统更新流程。
+    func checkForUpdates() {
+        updaterController.checkForUpdates(nil)
     }
 }

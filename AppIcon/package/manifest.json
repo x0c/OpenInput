@@ -1,0 +1,177 @@
+{
+  "generated_at": "2026-08-09T03:45:24.634192+00:00",
+  "source": "/Users/geraltgraham/Codes/OpenInput/AppIcon/AppIcon-1024.png",
+  "master": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/AppIcon-1024.png",
+  "platforms": [
+    "macos"
+  ],
+  "files": [
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/AppIcon-1024.png",
+      "size_px": 1024,
+      "slot": "master"
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/Contents.json",
+      "slot": "asset-catalog-contents"
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-16x16@1x.png",
+      "size_px": 16,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "16x16",
+        "scale": "1x",
+        "px": 16
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-16x16@2x.png",
+      "size_px": 32,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "16x16",
+        "scale": "2x",
+        "px": 32
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-32x32@1x.png",
+      "size_px": 32,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "32x32",
+        "scale": "1x",
+        "px": 32
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-32x32@2x.png",
+      "size_px": 64,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "32x32",
+        "scale": "2x",
+        "px": 64
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-128x128@1x.png",
+      "size_px": 128,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "128x128",
+        "scale": "1x",
+        "px": 128
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-128x128@2x.png",
+      "size_px": 256,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "128x128",
+        "scale": "2x",
+        "px": 256
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-256x256@1x.png",
+      "size_px": 256,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "256x256",
+        "scale": "1x",
+        "px": 256
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-256x256@2x.png",
+      "size_px": 512,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "256x256",
+        "scale": "2x",
+        "px": 512
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-512x512@1x.png",
+      "size_px": 512,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "512x512",
+        "scale": "1x",
+        "px": 512
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-app-512x512@2x.png",
+      "size_px": 1024,
+      "slot": {
+        "idiom": "mac",
+        "role": "app",
+        "size": "512x512",
+        "scale": "2x",
+        "px": 1024
+      }
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "slot": "contents"
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_16x16.png",
+      "size_px": 16
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_16x16@2x.png",
+      "size_px": 32
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_32x32.png",
+      "size_px": 32
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_32x32@2x.png",
+      "size_px": 64
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_128x128.png",
+      "size_px": 128
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_128x128@2x.png",
+      "size_px": 256
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_256x256.png",
+      "size_px": 256
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_256x256@2x.png",
+      "size_px": 512
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_512x512.png",
+      "size_px": 512
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/macos-iconset/AppIcon.iconset/icon_512x512@2x.png",
+      "size_px": 1024
+    },
+    {
+      "path": "/Users/geraltgraham/Codes/OpenInput/AppIcon/package/AppIcon.icns"
+    }
+  ],
+  "warnings": []
+}
