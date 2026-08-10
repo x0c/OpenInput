@@ -95,7 +95,8 @@ plist_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' OpenInput/Resourc
 [[ "${public_key}" == "${plist_key}" ]] || die "Sparkle 私钥与应用公钥不匹配"
 cp "${zip_path}" "${updates_dir}/"
 printf 'OpenInput %s\n\n- 正式提供已签名、公证的安装包与应用内自动更新。\n' "${version}" > "${updates_dir}/OpenInput-${version}.md"
-"${sparkle_dir}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}" "${updates_dir}"
+# Sparkle 直接拼接前缀与文件名，结尾必须保留斜杠；缺它会生成匿名 404 的更新地址。
+"${sparkle_dir}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/" "${updates_dir}"
 
 step "发布公开更新包和首装镜像"
 gh release create "v${version}" "${updates_dir}/OpenInput-${version}.zip" --repo "${UPDATE_REPOSITORY}" --title "OpenInput ${version}" --notes "OpenInput ${version} 自动更新包。" || gh release upload "v${version}" "${updates_dir}/OpenInput-${version}.zip" --repo "${UPDATE_REPOSITORY}" --clobber
