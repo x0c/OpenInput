@@ -111,7 +111,7 @@ git push origin main --tags
 gh release create "v${version}" "${dmg_path}" --repo x0c/OpenInput --title "OpenInput ${version}" --notes "OpenInput ${version} 已签名、公证的 macOS 安装包。" || gh release upload "v${version}" "${dmg_path}" --repo x0c/OpenInput --clobber
 
 step "匿名下载验收"
-curl -fsSL "https://github.com/${UPDATE_REPOSITORY}/raw/refs/heads/main/appcast.xml" -o /dev/null
+curl -fsSL "https://raw.githubusercontent.com/${UPDATE_REPOSITORY}/main/appcast.xml" -o /dev/null
 curl -fsSL "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.zip" -o /dev/null
 curl -fsSL "https://github.com/x0c/OpenInput/releases/download/v${version}/OpenInput-${version}.dmg" -o /dev/null
 printf '发布完成：v%s（内部构建号 %s）\n' "${version}" "${build_number}"

@@ -67,5 +67,5 @@ targets:
         NSHumanReadableCopyright: "Copyright © 2026 x0c"
         NSAccessibilityUsageDescription: OpenInput 需要辅助功能权限，以便将编辑好的文本粘贴回您原先所在的输入框。
         # XcodeGen 会据此生成最终发布版的 Info.plist；不得只改资源目录里的生成文件。
-        SUFeedURL: https://github.com/x0c/OpenInput-updates/raw/refs/heads/main/appcast.xml
+        SUFeedURL: https://raw.githubusercontent.com/x0c/OpenInput-updates/main/appcast.xml
         SUPublicEDKey: "BuNZQqosY0Ro5noXRLDCoO1X7nkpEzZ0Kr6itZLcge0="
