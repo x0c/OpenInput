@@ -13,9 +13,13 @@ final class InputPanelViewModel {
     var onSubmit: (() -> Void)?
     var onCancel: (() -> Void)?
     var onBorderNeedsUpdate: (() -> Void)?
+    var onToggleDictation: (() -> Void)?
 
     private var draftBeforeHistory: String = ""
     private weak var textView: NSTextView?
+    private var dictationPrefix = ""
+    private var acceptedCommitted = ""
+    private var applyingDictation = false
 
     var currentText: String { text }
 
@@ -62,7 +66,56 @@ final class InputPanelViewModel {
         draftBeforeHistory = ""
         historyQuery = ""
         showHistoryPopover = false
+        dictationPrefix = ""
+        acceptedCommitted = ""
         textView?.string = ""
+    }
+
+    func beginDictationSession() {
+        dictationPrefix = text
+        acceptedCommitted = ""
+    }
+
+    func applyDictation(committed: String, volatile: String) {
+        if let textView, textView.hasMarkedText() { return }
+        let newPart: String
+        if committed.hasPrefix(acceptedCommitted) {
+            newPart = String(committed.dropFirst(acceptedCommitted.count))
+        } else {
+            acceptedCommitted = ""
+            newPart = committed
+        }
+        let body = dictationPrefix + newPart
+        applyingDictation = true
+        text = body
+        guard let textView else {
+            applyingDictation = false
+            return
+        }
+        let font = textView.font ?? NSFont.systemFont(ofSize: 14)
+        let result = NSMutableAttributedString(string: body, attributes: [
+            .font: font,
+            .foregroundColor: NSColor.textColor
+        ])
+        if !volatile.isEmpty {
+            result.append(NSAttributedString(string: volatile, attributes: [
+                .font: font,
+                .foregroundColor: NSColor.secondaryLabelColor
+            ]))
+        }
+        textView.undoManager?.disableUndoRegistration()
+        textView.textStorage?.setAttributedString(result)
+        textView.setSelectedRange(NSRange(location: result.length, length: 0))
+        textView.undoManager?.enableUndoRegistration()
+        applyingDictation = false
+    }
+
+    var isApplyingDictation: Bool { applyingDictation }
+
+    func handleUserEditDuringDictation() {
+        guard SpeechDictationService.shared.isListening, !applyingDictation else { return }
+        dictationPrefix = text
+        acceptedCommitted = SpeechDictationService.shared.committedText
     }
 
     func setText(_ value: String) {
@@ -181,12 +234,14 @@ final class InputPanelViewModel {
 struct InputPanelRootView: View {
     private enum ActionFocus: Hashable {
         case history
+        case voice
         case close
     }
 
     let viewModel: InputPanelViewModel
     private let preferences = PreferencesStore.shared
     private let history = HistoryStore.shared
+    private let dictation = SpeechDictationService.shared
     @FocusState private var focusedAction: ActionFocus?
 
     var body: some View {
@@ -217,6 +272,45 @@ struct InputPanelRootView: View {
                     }
 
                     Spacer()
+
+                    if let message = dictation.statusMessage, dictation.status != .listening {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .lineLimit(1)
+                    } else if dictation.isListening {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.red.opacity(0.35 + Double(dictation.inputLevel) * 0.65))
+                                .frame(width: 7, height: 7)
+                            Text(listeningCaption(for: dictation.status))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Button {
+                        viewModel.onToggleDictation?()
+                    } label: {
+                        Image(systemName: dictation.isListening ? "mic.fill" : "mic")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(dictation.isListening ? Color.red : Color.secondary)
+                    .help(dictation.isSupportedByOS ? "panel.voice.toggle" : "panel.voice.unavailable.os")
+                    .padding(4)
+                    .background(
+                        Circle().fill(focusedAction == .voice ? Color.accentColor.opacity(0.16) : .clear)
+                    )
+                    .overlay {
+                        Circle()
+                            .strokeBorder(focusedAction == .voice ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
+                    }
+                    .focusEffectDisabled()
+                    .focused($focusedAction, equals: .voice)
+                    .accessibilityLabel(Text("panel.voice.toggle.accessibility.label"))
+                    .accessibilityHint(Text("panel.voice.toggle.accessibility.hint"))
+                    .disabled(!dictation.isSupportedByOS && !dictation.isListening)
 
                     Button {
                         if viewModel.showHistoryPopover {
@@ -287,6 +381,28 @@ struct InputPanelRootView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .onChange(of: preferences.borderColor) { _, _ in
             viewModel.onBorderNeedsUpdate?()
+        }
+        .onChange(of: dictation.committedText) { _, _ in
+            applyDictationIfNeeded()
+        }
+        .onChange(of: dictation.volatilePreview) { _, _ in
+            applyDictationIfNeeded()
+        }
+    }
+
+    private func applyDictationIfNeeded() {
+        guard dictation.isListening || !dictation.volatilePreview.isEmpty else { return }
+        viewModel.applyDictation(committed: dictation.committedText, volatile: dictation.volatilePreview)
+    }
+
+    private func listeningCaption(for status: SpeechDictationService.Status) -> LocalizedStringKey {
+        switch status {
+        case .installingAssets:
+            "panel.voice.installing"
+        case .preparing:
+            "panel.voice.preparing"
+        default:
+            "panel.voice.listening"
         }
     }
 }
@@ -459,7 +575,9 @@ struct InputTextViewRepresentable: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
+            if viewModel.isApplyingDictation { return }
             viewModel.text = textView.string
+            viewModel.handleUserEditDuringDictation()
             if viewModel.historyIndex != nil {
                 let items = viewModel.filteredHistory
                 if let idx = viewModel.historyIndex, items.indices.contains(idx),

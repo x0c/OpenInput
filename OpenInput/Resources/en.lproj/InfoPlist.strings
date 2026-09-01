@@ -1,2 +1,3 @@
 "CFBundleDisplayName" = "OpenInput";
 "NSAccessibilityUsageDescription" = "OpenInput needs Accessibility permission to paste the edited text back into your original input field.";
+"NSMicrophoneUsageDescription" = "OpenInput needs the microphone to turn what you say into text in the panel.";

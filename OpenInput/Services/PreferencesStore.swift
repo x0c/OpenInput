@@ -1,7 +1,6 @@
 import Foundation
 import AppKit
 import Observation
-import ServiceManagement
 
 /// 偏好键与默认值成对集中声明；统一「域.名」点分命名，禁止在使用处散落字面量键。
 enum PreferencesKeys {
@@ -11,7 +10,12 @@ enum PreferencesKeys {
     static let insertionMethod = "insertion.method"
     static let autoAddSpaces = "insertion.autoSpaces"
     static let launchAtLogin = "general.launchAtLogin"
+    static let menuBarIconVisible = "menuBar.iconVisible"
     static let windowFrame = "panel.windowFrame"
+    static let voiceAutoStartOnShow = "voice.autoStartOnShow"
+    static let voiceLocale = "voice.locale"
+    static let voiceAutoRefine = "voice.autoRefine"
+    static let voiceReplacements = "voice.replacements"
 
     static let borderColorDefault = BorderColorOption.blue
     static let panelOpacityDefault = 1.0
@@ -19,6 +23,10 @@ enum PreferencesKeys {
     static let insertionMethodDefault = InsertionMethod.paste
     static let autoAddSpacesDefault = false
     static let launchAtLoginDefault = false
+    static let menuBarIconVisibleDefault = true
+    static let voiceAutoStartOnShowDefault = false
+    static let voiceLocaleDefault = ""
+    static let voiceAutoRefineDefault = true
 }
 
 /// 全局偏好设置：所有设置项的唯一真相来源，视图与业务层只跟它打交道。
@@ -58,8 +66,36 @@ final class PreferencesStore {
     var launchAtLogin: Bool = PreferencesKeys.launchAtLoginDefault
     var launchAtLoginMessage: String?
 
+    /// 菜单栏图标是否显示。键不存在时保持默认显示，写入后才持久化。
+    var menuBarIconVisible: Bool {
+        didSet {
+            defaults.set(menuBarIconVisible, forKey: PreferencesKeys.menuBarIconVisible)
+            if !menuBarIconVisible {
+                NotificationCenter.default.post(name: .openInputShowRecoveryWindow, object: nil)
+            }
+        }
+    }
+
     var windowFrame: CGRect {
         didSet { saveFrame(windowFrame) }
+    }
+
+    /// 打开小窗时自动开始听写。
+    var voiceAutoStartOnShow: Bool {
+        didSet { defaults.set(voiceAutoStartOnShow, forKey: PreferencesKeys.voiceAutoStartOnShow) }
+    }
+
+    /// 空字符串表示跟随系统语言。
+    var voiceLocaleIdentifier: String {
+        didSet { defaults.set(voiceLocaleIdentifier, forKey: PreferencesKeys.voiceLocale) }
+    }
+
+    var voiceAutoRefine: Bool {
+        didSet { defaults.set(voiceAutoRefine, forKey: PreferencesKeys.voiceAutoRefine) }
+    }
+
+    var voiceReplacements: [VoiceReplacement] {
+        didSet { saveReplacements(voiceReplacements) }
     }
 
     private let defaults = UserDefaults.standard
@@ -104,6 +140,12 @@ final class PreferencesStore {
         autoAddSpaces = defaults.object(forKey: PreferencesKeys.autoAddSpaces) as? Bool
             ?? PreferencesKeys.autoAddSpacesDefault
 
+        if defaults.object(forKey: PreferencesKeys.menuBarIconVisible) == nil {
+            menuBarIconVisible = PreferencesKeys.menuBarIconVisibleDefault
+        } else {
+            menuBarIconVisible = defaults.bool(forKey: PreferencesKeys.menuBarIconVisible)
+        }
+
         if let data = defaults.data(forKey: PreferencesKeys.windowFrame),
            let rect = try? JSONDecoder().decode(CodableRect.self, from: data) {
             windowFrame = rect.cgRect
@@ -112,9 +154,29 @@ final class PreferencesStore {
             windowFrame = CGRect(x: 0, y: 0, width: size.width, height: size.height)
         }
 
+        if defaults.object(forKey: PreferencesKeys.voiceAutoStartOnShow) != nil {
+            voiceAutoStartOnShow = defaults.bool(forKey: PreferencesKeys.voiceAutoStartOnShow)
+        } else {
+            voiceAutoStartOnShow = PreferencesKeys.voiceAutoStartOnShowDefault
+        }
+        voiceLocaleIdentifier = defaults.string(forKey: PreferencesKeys.voiceLocale)
+            ?? PreferencesKeys.voiceLocaleDefault
+        if defaults.object(forKey: PreferencesKeys.voiceAutoRefine) != nil {
+            voiceAutoRefine = defaults.bool(forKey: PreferencesKeys.voiceAutoRefine)
+        } else {
+            voiceAutoRefine = PreferencesKeys.voiceAutoRefineDefault
+        }
+        if let data = defaults.data(forKey: PreferencesKeys.voiceReplacements),
+           let items = try? JSONDecoder().decode([VoiceReplacement].self, from: data) {
+            voiceReplacements = items
+        } else {
+            voiceReplacements = []
+        }
+
         let preferred = defaults.bool(forKey: PreferencesKeys.launchAtLogin)
-        launchAtLogin = preferred || LaunchAtLoginService.currentStatus().isEffectivelyOn
         LaunchAtLoginService.refreshIfNeeded(preferenceEnabled: preferred)
+        // 开关只跟系统真实会拉起的状态走；待批准不能先显示成开。
+        launchAtLogin = LaunchAtLoginService.currentStatus().isEffectivelyEnabled
         syncLaunchAtLoginFromSystem()
     }
 
@@ -137,6 +199,11 @@ final class PreferencesStore {
 
     func setLaunchAtLogin(_ enabled: Bool) {
         guard !isSyncingLaunchAtLogin else { return }
+        if LaunchAtLoginService.currentStatus() == .needsApproval, enabled {
+            LaunchAtLoginService.openSystemSettings()
+            syncLaunchAtLoginFromSystem()
+            return
+        }
         defaults.set(enabled, forKey: PreferencesKeys.launchAtLogin)
 
         switch LaunchAtLoginService.setEnabled(enabled) {
@@ -166,7 +233,8 @@ final class PreferencesStore {
             launchAtLoginMessage = nil
             defaults.set(true, forKey: PreferencesKeys.launchAtLogin)
         case .needsApproval:
-            launchAtLogin = preferred
+            // 待批准不是已开启：开关必须关着，只展示引导文案。
+            launchAtLogin = false
             launchAtLoginMessage = String(localized: "settings.general.launch.needsApproval")
         case .off:
             launchAtLogin = false
@@ -183,6 +251,12 @@ final class PreferencesStore {
         let codable = CodableRect(cgRect: rect)
         if let data = try? JSONEncoder().encode(codable) {
             defaults.set(data, forKey: PreferencesKeys.windowFrame)
+        }
+    }
+
+    private func saveReplacements(_ items: [VoiceReplacement]) {
+        if let data = try? JSONEncoder().encode(items) {
+            defaults.set(data, forKey: PreferencesKeys.voiceReplacements)
         }
     }
 }

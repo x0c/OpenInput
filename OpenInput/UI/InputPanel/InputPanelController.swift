@@ -16,6 +16,8 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     private var appSwitchObserver: NSObjectProtocol?
     private var clickOutsideMonitor: Any?
     private var suppressAutoHideUntil: Date = .distantPast
+    private var isSubmitting = false
+    private var lastInjectTarget: NSRunningApplication?
 
     private override init() {
         super.init()
@@ -57,6 +59,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         viewModel.focusEditor(force: true)
         installAutoHideMonitors()
         updateFocusVisual()
+        startDictationIfNeeded()
 
         if reason == .autoShow {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
@@ -70,6 +73,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     }
 
     func hide(clearText: Bool) {
+        SpeechDictationService.shared.stop()
         removeAutoHideMonitors()
         if clearText {
             viewModel.resetDraft()
@@ -99,30 +103,52 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     }
 
     func submitAndHide() {
-        let text = viewModel.currentText
-        guard !text.isEmpty else {
-            dismissActively()
-            return
-        }
-
-        let target = FocusTracker.shared.resolveApplication()
-            ?? FocusTracker.shared.resolveTargetApplication()
-        let focus = FocusTracker.shared.captured
-
-        AppMemoryStore.shared.rememberUsed(
-            bundleIdentifier: focus?.bundleIdentifier ?? target?.bundleIdentifier,
-            appName: focus?.appName ?? target?.localizedName
-        )
-        suppressAutoHideUntil = Date().addingTimeInterval(3.0)
-        AutoShowMonitor.shared.suppressBriefly(seconds: 2.5)
-        hide(clearText: true)
-
+        guard !isSubmitting else { return }
+        isSubmitting = true
         Task { @MainActor in
+            defer { isSubmitting = false }
+            await SpeechDictationService.shared.stopAndCommit()
+            viewModel.applyDictation(
+                committed: SpeechDictationService.shared.committedText,
+                volatile: ""
+            )
+
+            let raw = viewModel.currentText
+            guard !raw.isEmpty else {
+                dismissActively()
+                return
+            }
+
+            let refined = await TextRefinementService.shared.refine(raw)
+            viewModel.setText(refined.refined)
+
+            let target = FocusTracker.shared.resolveApplication()
+                ?? FocusTracker.shared.resolveTargetApplication()
+            let focus = FocusTracker.shared.captured
+
+            AppMemoryStore.shared.rememberUsed(
+                bundleIdentifier: focus?.bundleIdentifier ?? target?.bundleIdentifier,
+                appName: focus?.appName ?? target?.localizedName
+            )
+            suppressAutoHideUntil = Date().addingTimeInterval(3.0)
+            AutoShowMonitor.shared.suppressBriefly(seconds: 2.5)
+            hide(clearText: true)
+
             do {
-                try await TextInjector.shared.inject(text, into: target)
-                HistoryStore.shared.add(text)
+                try await TextInjector.shared.inject(refined.refined, into: target)
+                HistoryStore.shared.add(refined.refined)
+                if refined.didChange {
+                    lastInjectTarget = target
+                    TextRefinementService.shared.rememberCleanupRevert(
+                        original: refined.original,
+                        pasted: refined.refined
+                    )
+                } else {
+                    lastInjectTarget = nil
+                    TextRefinementService.shared.clearCleanupRevert()
+                }
             } catch {
-                presentInjectFailure(error, text: text)
+                presentInjectFailure(error, text: refined.refined)
             }
         }
     }
@@ -169,6 +195,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     private func handleAppActivated(bundleId: String?) {
         guard isVisible else { return }
         guard Date() >= suppressAutoHideUntil else { return }
+        guard SpeechDictationService.shared.status != .preparing else { return }
         guard let bundleId, bundleId != Bundle.main.bundleIdentifier else { return }
         dismissPassively()
     }
@@ -176,6 +203,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
     private func handleOutsideClick(at screenPoint: NSPoint) {
         guard isVisible, let panel else { return }
         guard Date() >= suppressAutoHideUntil else { return }
+        guard SpeechDictationService.shared.status != .preparing else { return }
         if !panel.frame.contains(screenPoint) {
             dismissPassively()
         }
@@ -296,6 +324,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         viewModel.onSubmit = { [weak self] in self?.submitAndHide() }
         viewModel.onCancel = { [weak self] in self?.dismissActively() }
         viewModel.onBorderNeedsUpdate = { [weak self] in self?.updateBorder() }
+        viewModel.onToggleDictation = { [weak self] in self?.toggleDictation() }
 
         updateBorder()
         updateShadowPath()
@@ -403,6 +432,7 @@ final class InputPanelController: NSObject, NSWindowDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             guard let self, self.isVisible else { return }
             guard Date() >= self.suppressAutoHideUntil else { return }
+            guard SpeechDictationService.shared.status != .preparing else { return }
             guard let panel = self.panel, !panel.isKeyWindow else { return }
             // 失去 key 且当前前台不是本应用进程 → 关闭。
             let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
@@ -439,6 +469,69 @@ final class InputPanelController: NSObject, NSWindowDelegate {
             width: panel.frame.width - pad * 2,
             height: panel.frame.height - pad * 2
         )
+    }
+
+    private func startDictationIfNeeded() {
+        guard PreferencesStore.shared.voiceAutoStartOnShow else { return }
+        startDictation()
+    }
+
+    func toggleDictation() {
+        if SpeechDictationService.shared.isListening {
+            SpeechDictationService.shared.stop()
+            viewModel.applyDictation(
+                committed: SpeechDictationService.shared.committedText,
+                volatile: ""
+            )
+            PreferencesStore.shared.voiceAutoStartOnShow = false
+            return
+        }
+        PreferencesStore.shared.voiceAutoStartOnShow = true
+        startDictation()
+    }
+
+    private func startDictation() {
+        suppressAutoHideUntil = Date().addingTimeInterval(30)
+        TextRefinementService.shared.prewarm()
+        Task { @MainActor in
+            viewModel.beginDictationSession()
+            await SpeechDictationService.shared.start()
+            if isVisible {
+                suppressAutoHideUntil = Date().addingTimeInterval(0.8)
+            }
+        }
+    }
+
+    var canRevertLastCleanup: Bool {
+        TextRefinementService.shared.canRevertLastCleanup
+    }
+
+    func revertLastCleanup() {
+        guard let pair = TextRefinementService.shared.consumeCleanupRevert() else { return }
+        let target = lastInjectTarget
+        Task { @MainActor in
+            if let current = FocusTracker.shared.focusedFieldValue(),
+               current != pair.pasted,
+               !current.contains(pair.pasted) {
+                presentRevertUnavailable()
+                return
+            }
+            do {
+                try await TextInjector.shared.inject(pair.original, into: target)
+            } catch {
+                presentInjectFailure(error, text: pair.original)
+            }
+        }
+    }
+
+    private func presentRevertUnavailable() {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "panel.voice.revert.unavailable.title")
+        alert.informativeText = String(localized: "panel.voice.revert.unavailable.body")
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: String(localized: "alert.ok"))
+        alert.runModal()
+        TextRefinementService.shared.clearCleanupRevert()
     }
 }
 

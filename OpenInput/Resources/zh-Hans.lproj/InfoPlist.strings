@@ -1,2 +1,3 @@
 "CFBundleDisplayName" = "智能输入小窗";
 "NSAccessibilityUsageDescription" = "OpenInput 需要辅助功能权限，以便将编辑好的文本粘贴回您原先所在的输入框。";
+"NSMicrophoneUsageDescription" = "OpenInput 需要使用麦克风，以便把您说的话转成文字填进小窗。";

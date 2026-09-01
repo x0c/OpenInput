@@ -48,6 +48,19 @@ final class FocusTracker {
         return NSRunningApplication(processIdentifier: captured.processIdentifier)
     }
 
+    /// 当前系统焦点输入框里的文字，读不到则返回 nil。
+    func focusedFieldValue() -> String? {
+        guard AccessibilityPermission.isTrusted else { return nil }
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            systemWide,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedRef
+        ) == .success, let focusedRef else { return nil }
+        return stringValue(focusedRef as! AXUIElement, kAXValueAttribute as String)
+    }
+
     func clear() {
         captured = nil
     }

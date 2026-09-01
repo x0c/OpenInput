@@ -1,34 +1,31 @@
-import AppKit
 import Foundation
+import MacKitCore
+import MacKitLaunchAtLogin
 import ServiceManagement
 
-/// 登录项注册：签名安装走 SMAppService，ad-hoc / DerivedData 构建回退到 LaunchAgent。
+/// 登录项注册：签名安装走 MacKit 的系统登录项；ad-hoc / DerivedData 才允许本应用内 LaunchAgent。
+/// LaunchAgent 回退不得进公共库，也绝不能自动重装（会孵出卡住的程序坞图标）。
+@MainActor
 enum LaunchAtLoginService {
     private static let agentLabel = "com.x0c.openinput.launchagent"
+    private static let systemService = MacKitLaunchAtLogin.LaunchAtLoginService()
+
     private static var agentPlistURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/LaunchAgents/\(agentLabel).plist")
     }
 
-    enum Status: Equatable {
-        case on
-        case off
-        case needsApproval
-
-        var isEffectivelyOn: Bool {
-            self == .on
-        }
-    }
+    typealias Status = LaunchAtLoginStatus
 
     static func currentStatus() -> Status {
-        switch SMAppService.mainApp.status {
-        case .enabled:
+        systemService.refresh()
+        switch systemService.status {
+        case .on:
             return .on
-        case .requiresApproval:
+        case .needsApproval:
             return .needsApproval
-        case .notFound, .notRegistered:
-            return launchAgentInstalled ? .on : .off
-        @unknown default:
+        case .off:
+            // 仅当系统登录项不可用、本机已有用户显式装过的 agent 时，才算开。
             return launchAgentInstalled ? .on : .off
         }
     }
@@ -51,32 +48,40 @@ enum LaunchAtLoginService {
         }
     }
 
+    static func openSystemSettings() {
+        systemService.openSystemSettings()
+    }
+
     /// DerivedData 重建后保持 LaunchAgent 可执行路径新鲜。
     /// 绝不替 ad-hoc Debug 构建自动重装 agent——那会孵化出多个卡死的副本。
     static func refreshIfNeeded(preferenceEnabled: Bool) {
         guard preferenceEnabled else { return }
-        if SMAppService.mainApp.status == .enabled { return }
+        systemService.refresh()
+        if systemService.status == .on { return }
         // 只刷新已存在的 LaunchAgent 路径，不在后台新建。
         guard launchAgentInstalled else { return }
         _ = try? installLaunchAgent()
     }
 
     private static func enable() throws {
-        // 优先 ServiceManagement；未签名 Debug 构建的 LaunchAgent 回退很容易挂死，
-        // 且无 KeepAlive 的 agent 会留下僵尸 Dock 图标。
+        // 系统登录项能用就走 MacKit；只有 .notFound（典型是未签名 Debug）才允许 LaunchAgent。
         let smStatus = SMAppService.mainApp.status
         if smStatus != .notFound {
-            try SMAppService.mainApp.register()
-            removeLaunchAgentQuietly()
-            return
+            switch systemService.setEnabled(true) {
+            case .success:
+                removeLaunchAgentQuietly()
+                return
+            case .failure(let error):
+                throw error
+            }
         }
-        // Debug / ad-hoc：仅当用户显式打开开关时才允许 LaunchAgent。
         try installLaunchAgent()
     }
 
     private static func disable() throws {
-        if SMAppService.mainApp.status == .enabled || SMAppService.mainApp.status == .requiresApproval {
-            try? SMAppService.mainApp.unregister()
+        let smStatus = SMAppService.mainApp.status
+        if smStatus == .enabled || smStatus == .requiresApproval {
+            _ = systemService.setEnabled(false)
         }
         try removeLaunchAgent()
     }

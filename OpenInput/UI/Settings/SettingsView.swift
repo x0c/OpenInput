@@ -7,6 +7,8 @@ struct SettingsView: View {
         TabView {
             GeneralSettingsView()
                 .tabItem { Label("settings.general", systemImage: "gearshape") }
+            VoiceSettingsView()
+                .tabItem { Label("settings.voice", systemImage: "mic") }
             ShortcutsSettingsView()
                 .tabItem { Label("settings.shortcuts", systemImage: "keyboard") }
             AutoShowSettingsView()
@@ -18,7 +20,7 @@ struct SettingsView: View {
             AboutSettingsView()
                 .tabItem { Label("settings.about", systemImage: "info.circle") }
         }
-        .frame(width: 520, height: 400)
+        .frame(width: 520, height: 440)
     }
 }
 
@@ -36,6 +38,8 @@ struct GeneralSettingsView: View {
 
         Form {
             Section {
+                Toggle("menu.showMenuBarIcon", isOn: $preferences.menuBarIconVisible)
+
                 Toggle("settings.general.launchAtLogin", isOn: Binding(
                     get: { preferences.launchAtLogin },
                     set: { preferences.setLaunchAtLogin($0) }
@@ -45,11 +49,8 @@ struct GeneralSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                     if LaunchAtLoginService.currentStatus() == .needsApproval {
-                        Button("settings.accessibility.open_settings") {
-                            guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension") else {
-                                return
-                            }
-                            NSWorkspace.shared.open(settingsURL)
+                        Button("menu.openLoginItems") {
+                            LaunchAtLoginService.openSystemSettings()
                         }
                     }
                 }
@@ -112,6 +113,7 @@ struct GeneralSettingsView: View {
         // 用户从系统设置返回后自动重检授权状态。
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             accessibilityTrusted = AccessibilityPermission.isTrusted
+            preferences.syncLaunchAtLoginFromSystem()
         }
     }
 }

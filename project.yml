@@ -4,7 +4,7 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
-  xcodeVersion: "16.0"
+  xcodeVersion: "26.0"
   developmentLanguage: zh-Hans
 settings:
   base:
@@ -29,6 +29,9 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: "2.9.4"
+  MacKit:
+    url: https://github.com/x0c/mac-kit-swift
+    from: "0.1.0"
 targets:
   OpenInput:
     type: application
@@ -47,12 +50,19 @@ targets:
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         COMBINE_HIDPI_IMAGES: YES
-        MARKETING_VERSION: "1.0.2"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.1.1"
+        CURRENT_PROJECT_VERSION: "6"
+        OTHER_LDFLAGS: "$(inherited) -weak_framework FoundationModels"
     dependencies:
       - package: KeyboardShortcuts
       - package: Sparkle
         product: Sparkle
+      - package: MacKit
+        product: MacKitCore
+      - package: MacKit
+        product: MacKitLaunchAtLogin
+      - package: MacKit
+        product: MacKitLifecycle
     info:
       path: OpenInput/Resources/Info.plist
       properties:
@@ -66,6 +76,7 @@ targets:
         NSPrincipalClass: NSApplication
         NSHumanReadableCopyright: "Copyright © 2026 x0c"
         NSAccessibilityUsageDescription: OpenInput 需要辅助功能权限，以便将编辑好的文本粘贴回您原先所在的输入框。
+        NSMicrophoneUsageDescription: OpenInput 需要使用麦克风，以便把您说的话转成文字填进小窗。
         # XcodeGen 会据此生成最终发布版的 Info.plist；不得只改资源目录里的生成文件。
-        SUFeedURL: https://raw.githubusercontent.com/x0c/OpenInput-updates/main/appcast.xml
+        SUFeedURL: https://github.com/x0c/OpenInput/releases/latest/download/appcast.xml
         SUPublicEDKey: "BuNZQqosY0Ro5noXRLDCoO1X7nkpEzZ0Kr6itZLcge0="

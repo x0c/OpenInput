@@ -26,7 +26,7 @@ OpenInput（智能输入小窗）为 macOS 单行输入框提供舒适的多行�
 - **小窗卡片（card）**：面板内的自绘圆角卡片，承载 `NSHostingView` 与自绘边框。
 - **锚点（anchorRect）**：`FocusTracker.captured?.anchorRect`，面板定位的依据（AX 光标或鼠标位置）。
 - **ShowReason**：`manual`（热键/菜单栏）与 `autoShow`（记忆自动弹出），影响显示时机的细节和抑制窗时长。
-- **抑制窗（suppressAutoHideUntil）**：显示后的一小段时间内容忍失去焦点，不立即隐藏（防闪烁）。
+- **抑制窗（suppressAutoHideUntil）**：显示后的一小段时间内容忍失去焦点，不立即隐藏（防闪烁）。听写授权弹窗期间会拉长到约 30 秒。
 
 ## §1.5 架构概览
 
@@ -38,6 +38,7 @@ flowchart TD
         A[AutoShowMonitor.evaluate] -->|show reason auto| C
         C -->|未显示| S[show]
         C -->|已显示| D[键盘: esc / ✕ 按 dismissActively]
+        S --> VOICE[若下次自动听已开 → 开始听写]
     end
     subgraph 构成侧
         S --> F1[FocusTracker.capture 记录锚点]
@@ -48,8 +49,10 @@ flowchart TD
     end
     subgraph 提交侧
         V[InputPanelViewModel submit] --> I[InputPanelController submitAndHide]
-        I --> R[rememberUsed 应用记忆]
-        I --> IN[TextInjector.inject 剪贴板⌘V]
+        I --> STOP[停听写并收下最后一句]
+        STOP --> REF[提交时顺手清理]
+        REF --> R[rememberUsed 应用记忆]
+        REF --> IN[TextInjector.inject 剪贴板⌘V]
         I --> H2[HistoryStore.add 历史]
         IN -->|失败| ALERT[presentInjectFailure 弹窗+剪贴板]
     end
@@ -63,17 +66,17 @@ flowchart TD
 
 | 状态 | 进入方式 | 说明 |
 |---|---|---|
-| 隐藏 | 启动 / `hide` | `panel?.orderOut(nil)` |
-| 显示中 | `show(reason:)` | `orderFrontRegardless` + `makeKey` + focus |
-| 提交中 | `submitAndHide` | 注入文本异步执行中 |
-| 失焦保护期 | 显示后 | `suppressAutoHideUntil` 之内不自动隐藏 |
+| 隐藏 | 启动 / `hide` | `panel?.orderOut(nil)`，并立刻停听写 |
+| 显示中 | `show(reason:)` | `orderFrontRegardless` + `makeKey` + focus；若下次自动听已开则开始听写 |
+| 提交中 | `submitAndHide` | 先停听写并清理，再隐藏并注入 |
+| 失焦保护期 | 显示后 | `suppressAutoHideUntil` 之内不自动隐藏；听写授权窗期间约 30 秒 |
 
 ### 关键分支（show 的完整时序）
 
 1. `show(reason:)`：若已可见直接返回；先 `FocusTracker.shared.captureFrontmost()` 记录本次目标应用与锚点。
 2. `ensurePanel()`：首次则创建 `KeyablePanel` + 卡片层级 + 绑定 `BorderOverlayView`。**关键**：面板 styleMask 必须含 `.nonactivatingPanel`（失去 `init` 时设置则无法存活，需重建）。
 3. `applySize(panel)` → `placeNearInput(panel)`：定位在锚点附近（见 §6 规则 3）。
-4. `updateBorder()` → `panel.level = .floating` → `panel.orderFrontRegardless()` → `panel.makeKey()` → `focusEditor(force: true)` → `installAutoHideMonitors()`。
+4. `updateBorder()` → `panel.level = .floating` → `panel.orderFrontRegardless()` → `panel.makeKey()` → `focusEditor(force: true)` → `installAutoHideMonitors()` → 若下次自动听已开则 `startDictationIfNeeded()`。
 5. `auto` 模式下额外 `asyncAfter(0.05s)` 再 `orderFront + makeKey + focus`（Chrome 等应用时序补偿）。
 
 ### 隐藏三分支
@@ -82,14 +85,16 @@ flowchart TD
 |---|---|---|
 | `dismissActively` | esc / 关闭按钮 / 热键再次 toggle | 记录记忆 `rememberDismissed` + `suppress` 2s + hide 不清文本 |
 | `dismissPassively` | 切换应用 / 点击面板外 | 不动记忆，`suppress` 1.2s + hide 不清文本 |
-| `hide(clearText:)` | 以上两者的共通收尾 | 拆监听、清/留文本、隐藏 |
+| `hide(clearText:)` | 以上两者的共通收尾 | 停听写、拆监听、清/留文本、隐藏 |
 
-提交路径：`submitAndHide()` → 文本为空直接 dismissActive；否则记录 `rememberUsed`（应用记忆）+ 异步 `TextInjector.inject` + 成功写 `HistoryStore`，失败弹 Alert（文本已在剪贴板兜底）。
+提交路径：`submitAndHide()` 防重入后异步执行：停听写并收下最后一句 → 提交时顺手清理 → 文本为空直接 dismissActive；否则记录 `rememberUsed` + 隐藏 + `TextInjector.inject` + 成功写 `HistoryStore`（写入的是清理后的稿）。清理确实改过字时记下还原记忆。失败弹 Alert（文本已在剪贴板兜底）。
+
+听写授权弹窗期间：`status == .preparing` 时跳过被动关闭；开始听写时把抑制窗拉到约 30 秒。
 
 ### 自动隐藏监听
 
 - `installAutoHideMonitors`（显示时安装）：`NSWorkspace.didActivateApplicationNotification` + 全局鼠标点击监测。
-- 命中条件：`isVisible` && 已过 `suppressAutoHideUntil` && 目标不是本应用 → `dismissPassively`。
+- 命中条件：`isVisible` && 已过 `suppressAutoHideUntil` && 不是正在启动听写 && 目标不是本应用 → `dismissPassively`。
 - `windowDidResignKey`：延迟 150ms 复核（前台非本应用才关）。
 
 ## §2.5 物理路径速查
@@ -97,8 +102,8 @@ flowchart TD
 | 目录（相对项目根） | 内容 | 关键类/文件数 |
 |---|---|---|
 | `OpenInput/UI/InputPanel/` | 面板控制器与视图 | InputPanelController.swift / InputPanelView.swift |
-| `OpenInput/UI/Settings/` | 设置窗口各页签 | SettingsView.swift / AutoShowSettingsView.swift |
-| `OpenInput/Services/` | 焦点捕获/注入/历史/偏好/自动弹出/热键 | 8 个 Swift 文件 |
+| `OpenInput/UI/Settings/` | 设置窗口各页签 | SettingsView.swift / VoiceSettingsView.swift / AutoShowSettingsView.swift |
+| `OpenInput/Services/` | 焦点捕获/注入/历史/偏好/自动弹出/热键/听写/清理 | 10 个 Swift 文件 |
 | `OpenInput/Models/` | 数据模型 | AppPreferences.swift |
 | `OpenInput/App/` | 入口与生命周期 | AppDelegate.swift / OpenInputApp.swift |
 
@@ -108,7 +113,8 @@ flowchart TD
 |---|---|---|---|
 | 呼出/切换小窗 | `AppDelegate.applicationDidFinishLaunching` | `HotkeyService.start` | 注册 ⌘⌥I 回调，内部 `DispatchQueue.main.async` 桥回 |
 | 显示小窗 | `InputPanelController.show(reason:)` | `KeyablePanel` 创建 + 定位 | reason: `.manual` / `.auto` |
-| 提交文本 | `InputPanelViewModel.submit` | `InputPanelController.submitAndHide` | 空文本走 dismiss；注入成功才写历史 |
+| 提交文本 | `InputPanelViewModel.submit` | `InputPanelController.submitAndHide` | 先停听写并清理；空文本走 dismiss；注入成功才写历史 |
+| 听写开关 | 小窗底部麦克风 | `toggleDictation` / `startDictationIfNeeded` | 与「下次自动听」是同一开关 |
 | 取消/关闭 | `InputPanelViewModel.cancel` | `InputPanelController.dismiss` | esc / ✕ 按钮 |
 | 全局热键设置 | `SettingsView.ShortcutsSettingsView` | `KeyboardShortcuts.Recorder` | `togglePanel` 默认 `⌥⌘I` |
 | 菜单栏 | `AppDelegate` | `MenuBarExtra` | 菜单项走 `requestTermination` 允许真退出 |
@@ -118,7 +124,8 @@ flowchart TD
 | 字段 | 宿主 | 业务语义 | 改动注意 |
 |---|---|---|---|
 | `ShowReason` | `InputPanelController` | manual/autoShow | 影响 suppress 时长 |
-| `suppressAutoHideUntil` | `InputPanelController` | 失焦保护时间窗 | 改小会闪，改大响应慢 |
+| `suppressAutoHideUntil` | `InputPanelController` | 失焦保护时间窗 | 改小会闪；听写授权时必须够长 |
+| 下次自动听 | `PreferencesStore.voiceAutoStartOnShow` | 唤出小窗是否直接开始听 | 与麦克风按钮共用 |
 | `panel.isVisible` | 面板 | 可见性事实源 | 不要用 window 属性判断 |
 | `windowFrame` | `PreferencesStore` | 面板 frame 持久化 | 移动/改变尺寸用 `windowDidMove`/`windowDidResize` 回调保存 |
 | 边框/透明度 | `PreferencesStore` | `panel.borderColor`/`panel.panelOpacity` | 修改后必须 `updateBorder()` |
@@ -134,6 +141,7 @@ flowchart TD
 
 ## §6 核心业务规则与隐性约束
 
+- 【禁止】把输入小窗当成隐藏菜单栏图标后的恢复面，或改成点外面不关的常驻窗。它是唤出工具。恢复面是独立的轻量主窗口，见 [菜单栏、隐藏图标与恢复窗口](MENU_BAR_LIFECYCLE_GUIDE.md)。
 - 【禁止】在 Carbon/AX 回调或全局监视回调里直接用 `Task { @MainActor }` —— Carbon 派发线程不在 MainActor executor 下，Swift 6 会 SIGSEGV。必须 `DispatchQueue.main.async` 桥回（见 `HotkeyService` 注释）。
 - 【禁止】修改 `panel` 的 `styleMask` 后直接复用 panel——非 activating 属性必须在 init 时传入，改 styleMask 无效（见 `ensurePanel` 重建逻辑）。
 - 【隐性依赖】显示前必须先 `FocusTracker.captureFrontmost()` ——否则 `anchor` 为 nil，`placeNearInput` 退化到鼠标位置。
@@ -151,21 +159,24 @@ flowchart TD
 
 - 改显示逻辑后：`xcodebuild -scheme OpenInput -configuration Debug` 编译成功后 `open .doc-init-dd/Build/Products/Debug/OpenInput.app`，按 `⌘⌥I` 应出现 400x180 浮动面板。
 - 改定位逻辑后：对任意应用输入框调用 `capture`，确认面板贴锚点（上方优先；浏览器宽地址栏收敛到鼠标）。
-- 改隐藏逻辑后：显示面板后点击面板外空白 → 面板应在 0.35~1.2s 抑制窗后消失；打开设置页多一点控制。
+- 改隐藏逻辑后：显示面板后点击面板外空白 → 面板应在 0.35~1.2s 抑制窗后消失；听写授权窗弹出时小窗应保持。打开设置页多一点控制。
+- 听写接线改动后按 [语音听写知识库](VOICE_INPUT_KNOWLEDGE_BASE.md) §7 验，不要只用「小窗能打开」代替。
 - 注意：面板定位依赖运行时的锚点；没有辅助功能权限时退化为鼠标位置，行为与授权后不同。
 
 ## §8 关联文档
 
+- [语音听写知识库](VOICE_INPUT_KNOWLEDGE_BASE.md)：麦克风开关、提交清理、授权窗期间的显隐。
 - [焦点捕获与文本注入知识库](FOCUS_INJECTION_KNOWLEDGE_BASE.md)：面板锚点来源、⌘V 注入时序。
 - [自动弹出知识库](AUTO_SHOW_KNOWLEDGE_BASE.md)：显示触发源与抑制策略。
 - [历史记录知识库](HISTORY_KNOWLEDGE_BASE.md)：历史浏览（面板内历史弹窗）。
 - [偏好设置知识库](PREFERENCES_KNOWLEDGE_BASE.md)：边框颜色、透明度、窗口尺寸。
+- [菜单栏、隐藏图标与恢复窗口](MENU_BAR_LIFECYCLE_GUIDE.md)：输入小窗不能当恢复面。
 - [Accessibility 机制 Guide](ACCESSIBILITY_GUIDE.md)：焦点锚点、AX 坐标转换。
 - [运行与验证 Guide](OPERATIONS_GUIDE.md)：构建安装启动日志。
 
 ## §9 覆盖度与待补充项
 
-- 覆盖：显隐状态机、定位、焦点态（`BorderOverlayView`）、提交/取消分流。
+- 覆盖：显隐状态机、定位、焦点态（`BorderOverlayView`）、提交/取消分流、听写开关接线。
 - 未覆盖：自动弹出的触发判定细节（详见 AUTO_SHOW KB）。
 - 待补充：真实设备上对 Chrome/Finder 等应用的锚点定位效果（需要有运行时验证截图）。
 

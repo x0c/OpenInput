@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSAccessibilityUsageDescription</key>
 	<string>OpenInput 需要辅助功能权限，以便将编辑好的文本粘贴回您原先所在的输入框。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>OpenInput 需要使用麦克风，以便把您说的话转成文字填进小窗。</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
@@ -33,7 +35,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/x0c/OpenInput-updates/main/appcast.xml</string>
+	<string>https://github.com/x0c/OpenInput/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>BuNZQqosY0Ro5noXRLDCoO1X7nkpEzZ0Kr6itZLcge0=</string>
 </dict>

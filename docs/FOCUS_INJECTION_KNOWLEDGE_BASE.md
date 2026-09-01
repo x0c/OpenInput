@@ -102,6 +102,7 @@ t2+320ms  恢复剪贴板
 | 捕获当前目标 | 面板显示前 | `FocusTracker.captureFrontmost` | 记录 pid/bundleId/名称/锚点 |
 | 取目标应用 | 注入前 | `FocusTracker.resolveTargetApplication` | 三级回退链 |
 | 注入文本 | 提交后 | `TextInjector.inject(_:into:)` | 剪贴板 + ⌘V 异步 |
+| 读当前焦点框文字 | 还原上次清理前 | `FocusTracker.focusedFieldValue` | 读不到则不拦还原；读到且已变则拒绝 |
 | 请求权限 | 授权引导 | `AccessibilityPermission.requestIfNeeded` | 弹系统授权框 |
 | 打开系统设置 | 权限缺失时 | `AccessibilityPermission.openSystemSettings` | 打开辅助功能设置页 |
 
@@ -141,6 +142,7 @@ t2+320ms  恢复剪贴板
 
 ## §8 关联文档
 
+- [语音听写知识库](VOICE_INPUT_KNOWLEDGE_BASE.md)：提交清理后的注入与还原时读焦点框。
 - [输入小窗知识库](INPUT_PANEL_KNOWLEDGE_BASE.md)：面板定位用锚点、提交流程入口。
 - [自动弹出知识库](AUTO_SHOW_KNOWLEDGE_BASE.md)：自动弹出也用 `resolveTargetApplication`。
 - [Accessibility 机制 Guide](ACCESSIBILITY_GUIDE.md)：AX 权限、Observer、坐标转换。
@@ -148,7 +150,7 @@ t2+320ms  恢复剪贴板
 
 ## §9 覆盖度与待补充项
 
-- 覆盖：回退链、坐标转换、注入时序、剪贴板保护、失败分支。
+- 覆盖：回退链、坐标转换、注入时序、剪贴板保护、失败分支、还原前读焦点框。
 - 待补充：Chrome 地址栏等特殊应用的实测锚点效果（需要运行验证）。
 - 低置信：120ms/200ms 时序参数来源（代码内无注释依据，属经验值）。
 

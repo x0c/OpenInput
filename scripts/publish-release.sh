@@ -6,7 +6,10 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEAM_ID="SHZQ3MWP3B"
 SIGN_IDENTITY="Developer ID Application"
-UPDATE_REPOSITORY="x0c/OpenInput-updates"
+SOURCE_REPOSITORY="x0c/OpenInput"
+UPDATE_FEED_URL="https://github.com/${SOURCE_REPOSITORY}/releases/latest/download/appcast.xml"
+# 迁移前旧更新源；仅用于首轮继承历史清单与防回退校验，勿在新发布里再引用
+LEGACY_FEED_URL="https://raw.githubusercontent.com/x0c/OpenInput-updates/main/appcast.xml"
 NOTARY_KEY="${NOTARY_KEY:-${HOME}/Documents/P8 密钥/发布公证密钥/AuthKey_D7YQ9HD7D6_Notarize.p8}"
 NOTARY_KEY_ID="${NOTARY_KEY_ID:-D7YQ9HD7D6}"
 NOTARY_ISSUER="${NOTARY_ISSUER:-c98fe4b8-d1bf-4b4a-b998-9eb8f3be9fe4}"
@@ -37,7 +40,7 @@ cd "${ROOT_DIR}"
 mkdir -p "${BUILD_DIR}"
 grep -q "${SIGN_IDENTITY}" <<<"$(security find-identity -v -p codesigning)" || die "本机缺少 Developer ID 发布证书"
 [[ -f "${NOTARY_KEY}" ]] || die "找不到苹果公证密钥"
-gh repo view "${UPDATE_REPOSITORY}" --json isPrivate --jq '.isPrivate' | grep -qx false || die "公开更新仓不存在或不是公开"
+gh repo view "${SOURCE_REPOSITORY}" --json isPrivate --jq '.isPrivate' | grep -qx false || die "源码仓不存在或不是公开"
 
 version="$(awk '/MARKETING_VERSION:/ { gsub(/\"/, "", $2); print $2; exit }' project.yml)"
 build_number="$(awk '/CURRENT_PROJECT_VERSION:/ { gsub(/\"/, "", $2); print $2; exit }' project.yml)"
@@ -66,8 +69,7 @@ codesign --verify --deep --strict --verbose=2 "${app_path}"
 step "制作拖拽安装镜像并提交苹果公证"
 stage="$(mktemp -d)"
 updates_dir="$(mktemp -d)"
-update_checkout="$(mktemp -d)"
-trap 'rm -rf "${stage}" "${updates_dir}" "${update_checkout}"' EXIT
+trap 'rm -rf "${stage}" "${updates_dir}"' EXIT
 ditto "${app_path}" "${stage}/OpenInput.app"
 ln -s /Applications "${stage}/Applications"
 hdiutil create -volname "OpenInput" -srcfolder "${stage}" -ov -format UDZO "${dmg_path}"
@@ -94,35 +96,35 @@ public_key="$("${sparkle_dir}/generate_keys" --account "${SPARKLE_ACCOUNT}" -p)"
 plist_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' OpenInput/Resources/Info.plist)"
 [[ "${public_key}" == "${plist_key}" ]] || die "Sparkle 私钥与应用公钥不匹配"
 cp "${zip_path}" "${updates_dir}/"
-printf 'OpenInput %s\n\n- 正式提供已签名、公证的安装包与应用内自动更新。\n' "${version}" > "${updates_dir}/OpenInput-${version}.md"
+# 继承上一份清单：优先源码仓，首轮迁移回退旧更新源（历史条目的旧地址在旧仓归档后仍可匿名下载）
+if curl -fsSL "${UPDATE_FEED_URL}" -o "${updates_dir}/appcast.xml" 2>/dev/null \
+  || curl -fsSL "${LEGACY_FEED_URL}" -o "${updates_dir}/appcast.xml" 2>/dev/null; then :; fi
 # Sparkle 直接拼接前缀与文件名，结尾必须保留斜杠；缺它会生成匿名 404 的更新地址。
-"${sparkle_dir}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/" "${updates_dir}"
+"${sparkle_dir}/generate_appcast" --account "${SPARKLE_ACCOUNT}" --download-url-prefix "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/" "${updates_dir}"
+grep -q 'sparkle:edSignature=' "${updates_dir}/appcast.xml" || die "更新清单缺少 EdDSA 签名"
 
-step "发布公开更新包和首装镜像"
+step "发布首装镜像与更新包到源码仓"
+# 清单、更新包、首装包全部发在同一源码仓 Release；禁止另建更新仓。
 # 同一版本可安全重跑：已经存在的公开资产先复用并在最后做匿名下载验证，
 # 不重复上传，以免慢链路空耗时间或触发平台的“文件已存在”错误。
-if ! gh release view "v${version}" --repo "${UPDATE_REPOSITORY}" >/dev/null 2>&1; then
-  gh release create "v${version}" "${updates_dir}/OpenInput-${version}.zip" "${dmg_path}" --repo "${UPDATE_REPOSITORY}" --title "OpenInput ${version}" --notes "OpenInput ${version} 自动更新包和已公证安装镜像。"
+if ! gh release view "v${version}" --repo "${SOURCE_REPOSITORY}" >/dev/null 2>&1; then
+  gh release create "v${version}" "${dmg_path}" "${updates_dir}/OpenInput-${version}.zip" "${updates_dir}/appcast.xml#appcast.xml" --repo "${SOURCE_REPOSITORY}" --title "OpenInput ${version}" --notes "OpenInput ${version} 已签名、公证的 macOS 安装包与应用内自动更新。"
 else
-  for asset_path in "${updates_dir}/OpenInput-${version}.zip" "${dmg_path}"; do
+  for asset_path in "${dmg_path}" "${updates_dir}/OpenInput-${version}.zip" "${updates_dir}/appcast.xml"; do
     asset_name="$(basename "${asset_path}")"
-    if ! gh release view "v${version}" --repo "${UPDATE_REPOSITORY}" --json assets --jq '.assets[].name' | grep -qx "${asset_name}"; then
-      gh release upload "v${version}" "${asset_path}" --repo "${UPDATE_REPOSITORY}"
+    if ! gh release view "v${version}" --repo "${SOURCE_REPOSITORY}" --json assets --jq '.assets[].name' | grep -qx "${asset_name}"; then
+      gh release upload "v${version}" "${asset_path}" --repo "${SOURCE_REPOSITORY}"
     fi
   done
 fi
-gh repo clone "${UPDATE_REPOSITORY}" "${update_checkout}" -- --depth 1
-cp "${updates_dir}/appcast.xml" "${update_checkout}/appcast.xml"
-(cd "${update_checkout}" && git add appcast.xml && git commit -m "发布 OpenInput ${version} 更新清单" && git push)
 
 git add -A
 git commit -m "发布 OpenInput ${version} 正式自分发"
 git tag "v${version}"
 git push origin main --tags
-gh release create "v${version}" "${dmg_path}" --repo x0c/OpenInput --title "OpenInput ${version}" --notes "OpenInput ${version} 已签名、公证的 macOS 安装包。" || gh release upload "v${version}" "${dmg_path}" --repo x0c/OpenInput --clobber
 
 step "匿名下载验收"
-curl -fsSL "https://raw.githubusercontent.com/${UPDATE_REPOSITORY}/main/appcast.xml" -o /dev/null
-curl -fsSL "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.zip" -o /dev/null
-curl -fsSL "https://github.com/${UPDATE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.dmg" -o /dev/null
+curl -fsSL "${UPDATE_FEED_URL}" -o /dev/null
+curl -fsSL "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.zip" -o /dev/null
+curl -fsSL "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.dmg" -o /dev/null
 printf '发布完成：v%s（内部构建号 %s）\n' "${version}" "${build_number}"
