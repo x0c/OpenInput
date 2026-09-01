@@ -119,9 +119,13 @@ else
 fi
 
 git add -A
-git commit -m "发布 OpenInput ${version} 正式自分发"
-git tag "v${version}"
-git push origin main --tags
+git commit -m "发布 OpenInput ${version} 正式自分发" || true
+# 发行页创建时远端已经有同名标签；再推同一标签会把整段发版判失败。
+git push origin main
+if ! git ls-remote --tags origin "refs/tags/v${version}" | grep -q .; then
+  git tag "v${version}" 2>/dev/null || true
+  git push origin "v${version}"
+fi
 
 step "匿名下载验收"
 curl -fsSL "${UPDATE_FEED_URL}" -o /dev/null
