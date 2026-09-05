@@ -13,3 +13,4 @@ xcuserdata/
 .idea/
 release-logs/
 tmp/
+.build-menubar-fix/

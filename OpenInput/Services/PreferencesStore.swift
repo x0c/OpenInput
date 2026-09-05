@@ -67,12 +67,10 @@ final class PreferencesStore {
     var launchAtLoginMessage: String?
 
     /// 菜单栏图标是否显示。键不存在时保持默认显示，写入后才持久化。
+    /// 点隐藏时静默，不发恢复窗通知；再次打开或「打开主窗口」才出示。
     var menuBarIconVisible: Bool {
         didSet {
             defaults.set(menuBarIconVisible, forKey: PreferencesKeys.menuBarIconVisible)
-            if !menuBarIconVisible {
-                NotificationCenter.default.post(name: .openInputShowRecoveryWindow, object: nil)
-            }
         }
     }
 

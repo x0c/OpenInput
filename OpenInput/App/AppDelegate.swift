@@ -57,8 +57,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AutoShowMonitor.shared.start()
         TextRefinementService.shared.refreshAvailability()
 
+        let isLoginLaunch = LoginLaunchDetector.isLaunchedAsLoginItem
         if MenuBarReopenPolicy.shouldShowRecoveryWindow(
-            iconVisible: PreferencesStore.shared.menuBarIconVisible
+            iconVisible: PreferencesStore.shared.menuBarIconVisible,
+            isLoginLaunch: isLoginLaunch
         ) {
             showRecoveryWindow()
         }

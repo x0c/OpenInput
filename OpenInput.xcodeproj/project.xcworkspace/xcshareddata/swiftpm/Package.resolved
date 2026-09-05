@@ -1,33 +1,33 @@
 {
-  "originHash" : "41f1fd9665410294bdd7bf392c4612c71718aa67ab6f793f554beaeab96111a1",
-  "pins" : [
+  "originHash": "41f1fd9665410294bdd7bf392c4612c71718aa67ab6f793f554beaeab96111a1",
+  "pins": [
     {
-      "identity" : "keyboardshortcuts",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sindresorhus/KeyboardShortcuts",
-      "state" : {
-        "revision" : "1aef85578fdd4f9eaeeb8d53b7b4fc31bf08fe27",
-        "version" : "2.4.0"
+      "identity": "keyboardshortcuts",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/sindresorhus/KeyboardShortcuts",
+      "state": {
+        "revision": "1aef85578fdd4f9eaeeb8d53b7b4fc31bf08fe27",
+        "version": "2.4.0"
       }
     },
     {
-      "identity" : "mac-kit-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/x0c/mac-kit-swift",
-      "state" : {
-        "revision" : "0a0f0a28b46ff0bd0beb2c9d6d171a9bdeb77fce",
-        "version" : "0.1.1"
+      "identity": "mac-kit-swift",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/x0c/mac-kit-swift",
+      "state": {
+        "revision": "3568962276c1943d18f6ff09b5b3aea03b2740d8",
+        "version": "0.1.2"
       }
     },
     {
-      "identity" : "sparkle",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sparkle-project/Sparkle",
-      "state" : {
-        "revision" : "79bc9e872948e47877e76f194cb0c8e0412b0b90",
-        "version" : "2.9.5"
+      "identity": "sparkle",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/sparkle-project/Sparkle",
+      "state": {
+        "revision": "79bc9e872948e47877e76f194cb0c8e0412b0b90",
+        "version": "2.9.5"
       }
     }
   ],
-  "version" : 3
+  "version": 3
 }
