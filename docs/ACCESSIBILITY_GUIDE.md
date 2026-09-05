@@ -20,6 +20,10 @@ OpenInput 是辅助功能重度应用：
 
 ## 核心入口
 
+### 0. AX 属性读取助手（AXAttributeAccess.swift）
+
+`FocusTracker` 与 `AutoShowMonitor` 共用 `AXAttributeAccess` 读字符串 / 布尔 / 数字 / 父节点 / CGPoint / CGSize。禁止在两处再各写一份 `AXUIElementCopyAttributeValue` 薄包装。
+
 ### 1. 权限检查（AccessibilityPermission.swift）
 
 ```swift

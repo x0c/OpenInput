@@ -28,6 +28,7 @@
 		8769DA9507582C90FCDFC835 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E89B6255D83404E4A74997 /* PreferencesStore.swift */; };
 		890E24C47B1D67F61D0AA983 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DB7A83C151279C3000B0B06E /* Assets.xcassets */; };
 		90691929E5EB5E2385B89AA6 /* SpeechDictationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E23CBD2EEA8E4D731A599A /* SpeechDictationService.swift */; };
+		9F8BF425952CCAA72BD61040 /* AXAttributeAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2101CD848B005D53AC2B9772 /* AXAttributeAccess.swift */; };
 		A920B6C0FCF949E3ED01C471 /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8698FAAE1823D157FCA28CBD /* HotkeyService.swift */; };
 		ACF5AC3CF50E460BA53DAA38 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F7AB416355B604006D208E29 /* InfoPlist.strings */; };
 		AF39E1E236B3D4A3FB3A2971 /* InputPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7721344FA020FA7A74B8BFAD /* InputPanelView.swift */; };
@@ -40,6 +41,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2101CD848B005D53AC2B9772 /* AXAttributeAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXAttributeAccess.swift; sourceTree = "<group>"; };
 		239C30789BD0F9985DA4A35B /* RecoveryWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryWindowView.swift; sourceTree = "<group>"; };
 		31752E80270E35A42031D7DA /* AppMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMemoryStore.swift; sourceTree = "<group>"; };
 		31B278A84464392BDD2AE67F /* AutoShowSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoShowSettingsView.swift; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 				650A44B9B1FDF3D1720DA34E /* AccessibilityPermission.swift */,
 				31752E80270E35A42031D7DA /* AppMemoryStore.swift */,
 				BFD168E7E9F72B73533F214E /* AutoShowMonitor.swift */,
+				2101CD848B005D53AC2B9772 /* AXAttributeAccess.swift */,
 				ED996FBB08E9C7476A6EA485 /* FocusTracker.swift */,
 				76EE3B0D903F2444520D2FCE /* HistoryStore.swift */,
 				8698FAAE1823D157FCA28CBD /* HotkeyService.swift */,
@@ -288,6 +291,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F8BF425952CCAA72BD61040 /* AXAttributeAccess.swift in Sources */,
 				418D4FC25E728887795AB9F7 /* AccessibilityPermission.swift in Sources */,
 				ED89483A9067D5DC1F5DCE89 /* AppDelegate.swift in Sources */,
 				1F389C9C64239E6DA38355FC /* AppMemoryStore.swift in Sources */,

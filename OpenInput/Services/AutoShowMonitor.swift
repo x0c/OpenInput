@@ -233,26 +233,26 @@ final class AutoShowMonitor {
         // 向上追溯若干级祖先——Chrome 地址栏聚焦可能落在内层节点上。
         for _ in 0..<6 {
             if isTextLike(element) {
-                let role = stringAttribute(element, kAXRoleAttribute as String) ?? "?"
-                let desc = stringAttribute(element, kAXDescriptionAttribute as String) ?? ""
-                let title = stringAttribute(element, kAXTitleAttribute as String) ?? ""
+                let role = AXAttributeAccess.string(element, kAXRoleAttribute as String) ?? "?"
+                let desc = AXAttributeAccess.string(element, kAXDescriptionAttribute as String) ?? ""
+                let title = AXAttributeAccess.string(element, kAXTitleAttribute as String) ?? ""
                 var pos = ""
-                if let bounds = elementOrigin(element) {
+                if let bounds = AXAttributeAccess.cgPoint(element, kAXPositionAttribute as String) {
                     pos = "\(Int(bounds.x)),\(Int(bounds.y))"
                 }
                 return "\(pid)|\(role)|\(desc)|\(title)|\(pos)"
             }
-            guard let parent = parentElement(element) else { break }
+            guard let parent = AXAttributeAccess.parent(element) else { break }
             element = parent
         }
         return nil
     }
 
     private func isTextLike(_ element: AXUIElement) -> Bool {
-        let role = stringAttribute(element, kAXRoleAttribute as String) ?? ""
-        let subrole = stringAttribute(element, kAXSubroleAttribute as String) ?? ""
-        let desc = (stringAttribute(element, kAXDescriptionAttribute as String) ?? "").lowercased()
-        let title = (stringAttribute(element, kAXTitleAttribute as String) ?? "").lowercased()
+        let role = AXAttributeAccess.string(element, kAXRoleAttribute as String) ?? ""
+        let subrole = AXAttributeAccess.string(element, kAXSubroleAttribute as String) ?? ""
+        let desc = (AXAttributeAccess.string(element, kAXDescriptionAttribute as String) ?? "").lowercased()
+        let title = (AXAttributeAccess.string(element, kAXTitleAttribute as String) ?? "").lowercased()
 
         let textRoles: Set<String> = [
             kAXTextFieldRole as String,
@@ -271,7 +271,7 @@ final class AutoShowMonitor {
             return true
         }
 
-        if boolAttribute(element, "AXEditable") == true { return true }
+        if AXAttributeAccess.bool(element, "AXEditable") == true { return true }
 
         // 存在可选中的文本区间 → 基本可以确定是编辑器 / 输入框。
         var rangeRef: CFTypeRef?
@@ -284,58 +284,19 @@ final class AutoShowMonitor {
         }
 
         // 有字符串 AXValue 且处于聚焦态 → 通常是输入框（Chrome 地址栏）。
-        if stringAttribute(element, kAXValueAttribute as String) != nil,
+        if AXAttributeAccess.string(element, kAXValueAttribute as String) != nil,
            textRoles.contains(role) || role == "AXGroup" || role.isEmpty {
             // AXGroup 仅在同时具备插入相关属性时才视为文本类。
             if role != "AXGroup" { return true }
-            if numberAttribute(element, kAXNumberOfCharactersAttribute as String) != nil {
+            if AXAttributeAccess.number(element, kAXNumberOfCharactersAttribute as String) != nil {
                 return true
             }
         }
 
-        if numberAttribute(element, kAXNumberOfCharactersAttribute as String) != nil {
+        if AXAttributeAccess.number(element, kAXNumberOfCharactersAttribute as String) != nil {
             return true
         }
 
         return false
-    }
-
-    private func parentElement(_ element: AXUIElement) -> AXUIElement? {
-        var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &ref) == .success,
-              let ref else { return nil }
-        let parent = ref as! AXUIElement
-        return parent
-    }
-
-    private func elementOrigin(_ element: AXUIElement) -> CGPoint? {
-        var posRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posRef) == .success,
-              let posRef,
-              CFGetTypeID(posRef) == AXValueGetTypeID() else { return nil }
-        var point = CGPoint.zero
-        guard AXValueGetValue(posRef as! AXValue, .cgPoint, &point) else { return nil }
-        return point
-    }
-
-    private func stringAttribute(_ element: AXUIElement, _ name: String) -> String? {
-        var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &ref) == .success,
-              let ref else { return nil }
-        return ref as? String
-    }
-
-    private func boolAttribute(_ element: AXUIElement, _ name: String) -> Bool? {
-        var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &ref) == .success,
-              let ref else { return nil }
-        return (ref as? Bool) ?? (ref as? NSNumber)?.boolValue
-    }
-
-    private func numberAttribute(_ element: AXUIElement, _ name: String) -> NSNumber? {
-        var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &ref) == .success,
-              let ref else { return nil }
-        return ref as? NSNumber
     }
 }

@@ -218,9 +218,17 @@ final class SpeechDictationService {
             self.continuation = continuation
 
             if usingDictationTranscriber {
-                pumpDictationResults(dictation, generation: generation)
+                pumpResults(generation: generation) { emit in
+                    for try await result in dictation.results {
+                        await emit(String(result.text.characters), result.isFinal)
+                    }
+                }
             } else {
-                pumpSpeechResults(transcriber, generation: generation)
+                pumpResults(generation: generation) { emit in
+                    for try await result in transcriber.results {
+                        await emit(String(result.text.characters), result.isFinal)
+                    }
+                }
             }
 
             try await analyzer.start(inputSequence: stream)
@@ -263,33 +271,15 @@ final class SpeechDictationService {
     }
 
     @available(macOS 26.0, *)
-    private func pumpDictationResults(_ transcriber: DictationTranscriber, generation: UInt64) {
+    private func pumpResults(
+        generation: UInt64,
+        iterate: @escaping @Sendable (
+            _ emit: @Sendable (String, Bool) async -> Void
+        ) async throws -> Void
+    ) {
         resultPump = Task { [weak self] in
             do {
-                for try await result in transcriber.results {
-                    let text = String(result.text.characters)
-                    let isFinal = result.isFinal
-                    await MainActor.run {
-                        guard let self, self.startGeneration == generation else { return }
-                        self.handleResult(text: text, isFinal: isFinal)
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    guard let self, self.startGeneration == generation, self.isListening else { return }
-                    self.logger.error("听写结果流结束：\(error.localizedDescription, privacy: .public)")
-                }
-            }
-        }
-    }
-
-    @available(macOS 26.0, *)
-    private func pumpSpeechResults(_ transcriber: SpeechTranscriber, generation: UInt64) {
-        resultPump = Task { [weak self] in
-            do {
-                for try await result in transcriber.results {
-                    let text = String(result.text.characters)
-                    let isFinal = result.isFinal
+                try await iterate { text, isFinal in
                     await MainActor.run {
                         guard let self, self.startGeneration == generation else { return }
                         self.handleResult(text: text, isFinal: isFinal)

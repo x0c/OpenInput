@@ -63,7 +63,7 @@ Linux 开发机无法执行上述构建。菜单栏完成态的真机步骤见 [
 |------|---------|
 | 输入小窗（含热键呼出） | OpenInput/UI/InputPanel/, OpenInput/Services/HotkeyService.swift |
 | 语音听写与提交清理 | OpenInput/Services/SpeechDictationService.swift, OpenInput/Services/TextRefinementService.swift, OpenInput/UI/Settings/VoiceSettingsView.swift |
-| 焦点捕获与文本注入 | OpenInput/Services/FocusTracker.swift, OpenInput/Services/TextInjector.swift |
+| 焦点捕获与文本注入 | OpenInput/Services/FocusTracker.swift, OpenInput/Services/TextInjector.swift, OpenInput/Services/AXAttributeAccess.swift |
 | 应用记忆与自动弹出 | OpenInput/Services/AutoShowMonitor.swift, OpenInput/Services/AppMemoryStore.swift |
 | 历史记录 | OpenInput/Services/HistoryStore.swift, OpenInput/UI/History/ |
 | 偏好设置与登录启动 | OpenInput/Services/PreferencesStore.swift, OpenInput/Services/LaunchAtLoginService.swift, OpenInput/Services/AccessibilityPermission.swift, OpenInput/UI/Settings/ |

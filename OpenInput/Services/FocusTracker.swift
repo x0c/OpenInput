@@ -58,7 +58,7 @@ final class FocusTracker {
             kAXFocusedUIElementAttribute as CFString,
             &focusedRef
         ) == .success, let focusedRef else { return nil }
-        return stringValue(focusedRef as! AXUIElement, kAXValueAttribute as String)
+        return AXAttributeAccess.string(focusedRef as! AXUIElement, kAXValueAttribute as String)
     }
 
     func clear() {
@@ -119,7 +119,7 @@ final class FocusTracker {
                 return pinchWide(caret)
             }
             if let frame = elementBoundsCocoa(for: element), frame.width > 2, frame.height > 2 {
-                let role = stringValue(element, kAXRoleAttribute as String) ?? ""
+                let role = AXAttributeAccess.string(element, kAXRoleAttribute as String) ?? ""
                 let textRoles = [
                     kAXTextFieldRole as String,
                     kAXTextAreaRole as String,
@@ -130,7 +130,7 @@ final class FocusTracker {
                     return pinchWide(frame)
                 }
             }
-            guard let parent = parentOf(element) else { break }
+            guard let parent = AXAttributeAccess.parent(element) else { break }
             element = parent
         }
         return nil
@@ -170,35 +170,10 @@ final class FocusTracker {
     }
 
     private func elementBoundsCocoa(for element: AXUIElement) -> CGRect? {
-        var posRef: CFTypeRef?
-        var sizeRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posRef) == .success,
-              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success,
-              let posRef, let sizeRef,
-              CFGetTypeID(posRef) == AXValueGetTypeID(),
-              CFGetTypeID(sizeRef) == AXValueGetTypeID() else { return nil }
-
-        var origin = CGPoint.zero
-        var size = CGSize.zero
-        guard AXValueGetValue(posRef as! AXValue, .cgPoint, &origin),
-              AXValueGetValue(sizeRef as! AXValue, .cgSize, &size),
+        guard let origin = AXAttributeAccess.cgPoint(element, kAXPositionAttribute as String),
+              let size = AXAttributeAccess.cgSize(element, kAXSizeAttribute as String),
               size.width > 0, size.height > 0 else { return nil }
         return axToCocoa(CGRect(origin: origin, size: size))
-    }
-
-    private func parentOf(_ element: AXUIElement) -> AXUIElement? {
-        var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &ref) == .success,
-              let ref else { return nil }
-        let parent = ref as! AXUIElement
-        return parent
-    }
-
-    private func stringValue(_ element: AXUIElement, _ name: String) -> String? {
-        var ref: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &ref) == .success,
-              let ref else { return nil }
-        return ref as? String
     }
 
     private func mouseFallbackCocoa() -> CGRect {
