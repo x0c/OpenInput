@@ -127,7 +127,8 @@ t2+320ms  恢复剪贴板
 
 - **AI 易错点**：AX 坐标是左上原点，AppKit 是左下原点，`FocusTracker.axToCocoa` 用 `NSScreen.screens.max(\.frame.maxY)` 翻转 Y 轴。**新增任何 AX 坐标使用必须经过该转换**。
 - **AI 易错点**：`anchorFromElement` 只向上追溯 8 层——祖先链超过 8 层（深层嵌套的 WebView 内容）会放弃锚点退到鼠标位置。
-- 【禁止】注入时 `NSPasteboard.general` 直接覆盖——必须先备份再恢复，否则破坏用户剪贴板。
+- 【禁止】注入时 `NSPasteboard.general` 直接覆盖——必须先备份，并用 `defer`（或等价的成功/失败/取消路径）恢复，否则 sleep 取消或中途抛错会丢用户剪贴板。
+- 【禁止】`postCommandV` 在 `CGEvent` 创建失败时静默 `return`——必须抛错，否则上层会当成注入成功并写历史 / 应用记忆，而剪贴板已被恢复、目标框无新字。
 - 【隐性依赖】`captureFrontmost` 必须在显示面板前调用（`InputPanelController.show` 第一步）——否则注入时 `resolveApplication` 拿到 nil。
 - 【隐性】`activate()` 后固定 sleep 120ms 再发 ⌘V：太短应用未就绪、太长延迟明显。修改需真机验证。
 - 【隐性】目标应用已退出（崩溃/关闭）时 `resolveApplication` 可能返回死进程，注入静默失败——`inject` 的 `noTarget` 只在 target 为 nil 时触发。

@@ -120,6 +120,23 @@
         }
       }
     },
+    "error.inject.pasteFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法向目标应用发送粘贴快捷键"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not send the paste shortcut to the target app"
+          }
+        }
+      }
+    },
     "error.launch.missingExecutable": {
       "extractionState": "manual",
       "localizations": {

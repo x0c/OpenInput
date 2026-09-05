@@ -126,16 +126,17 @@ final class InputPanelController: NSObject, NSWindowDelegate {
                 ?? FocusTracker.shared.resolveTargetApplication()
             let focus = FocusTracker.shared.captured
 
-            AppMemoryStore.shared.rememberUsed(
-                bundleIdentifier: focus?.bundleIdentifier ?? target?.bundleIdentifier,
-                appName: focus?.appName ?? target?.localizedName
-            )
             suppressAutoHideUntil = Date().addingTimeInterval(3.0)
             AutoShowMonitor.shared.suppressBriefly(seconds: 2.5)
             hide(clearText: true)
 
             do {
                 try await TextInjector.shared.inject(refined.refined, into: target)
+                // 仅成功粘贴后才记「用过」——失败路径不得打开该应用的自动弹出。
+                AppMemoryStore.shared.rememberUsed(
+                    bundleIdentifier: focus?.bundleIdentifier ?? target?.bundleIdentifier,
+                    appName: focus?.appName ?? target?.localizedName
+                )
                 HistoryStore.shared.add(refined.refined)
                 if refined.didChange {
                     lastInjectTarget = target

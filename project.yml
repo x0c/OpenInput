@@ -50,8 +50,8 @@ targets:
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         COMBINE_HIDPI_IMAGES: YES
-        MARKETING_VERSION: "1.1.2"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "1.1.3"
+        CURRENT_PROJECT_VERSION: "8"
         OTHER_LDFLAGS: "$(inherited) -weak_framework FoundationModels"
     dependencies:
       - package: KeyboardShortcuts

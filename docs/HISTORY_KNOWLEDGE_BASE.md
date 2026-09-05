@@ -57,8 +57,8 @@ flowchart TD
 ### 添加（add）
 
 1. `trimmingCharacters(in: .whitespacesAndNewlines)` 后为空 → 丢弃。
-2. 已存在相同文本 → 移除旧条目并**移回顶部**（保留原 ID，刷新 createdAt），跳步骤 3。
-3. 否则 insert 顶部、用当前时间。
+2. 已存在**trim 后相同**文本 → 移除旧条目并**移回顶部**（保留原 ID，刷新 createdAt），跳步骤 3。
+3. 否则 insert 顶部（存 trim 后文本）、用当前时间。
 4. 若 `items.count > 200` → 裁剪掉最旧（`prefix(200)`）。
 5. `save()` 原子写盘。
 
@@ -109,7 +109,7 @@ flowchart TD
 
 ## §6 核心业务规则与隐性约束
 
-- **AI 易错点**：`add` 的去重是「完全同文本」——只差一个空格/大小写就会变成新条目；且去重会**刷新 createdAt**（时间会变），依赖历史时间排序的逻辑要留意。
+- **AI 易错点**：`add` 的去重是 trim 后的「完全同文本」——大小写不同仍是新条目；首尾空白在写入前剥掉。去重会**刷新 createdAt**（时间会变），依赖历史时间排序的逻辑要留意。
 - 【禁止】清空历史时清掉 `history.json` 文件本身——应通过 `HistoryStore.clear()`（清数组 + 写空数组），文件保留。
 - 【隐性】设置页 `delete(at:)` 用过滤后的 index 集去删除原始列表 → 过滤态删除必须先经 `filtered` 映射回原始 ID（现实现用 `filtered[$0].id`）。
 - 【隐性】小窗内历史浏览使用 `draftBeforeHistory` 保存编辑中文本——浏览时修改文本会改变草稿；只有 esc 关闭弹层时恢复。

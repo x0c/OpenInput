@@ -27,8 +27,8 @@ final class HistoryStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        // 重复文本移到顶部，不产生重复条目。
-        if let existingIndex = items.firstIndex(where: { $0.text == text }) {
+        // 去重与落盘一律用 trim 后文本，避免首尾空白造成假重复条目。
+        if let existingIndex = items.firstIndex(where: { $0.text == trimmed }) {
             var item = items.remove(at: existingIndex)
             item = HistoryItem(id: item.id, text: item.text, createdAt: Date())
             items.insert(item, at: 0)
@@ -36,7 +36,7 @@ final class HistoryStore {
             return
         }
 
-        items.insert(HistoryItem(text: text), at: 0)
+        items.insert(HistoryItem(text: trimmed), at: 0)
         if items.count > maxItems {
             items = Array(items.prefix(maxItems))
         }

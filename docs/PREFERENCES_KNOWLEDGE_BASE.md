@@ -101,7 +101,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 | 启动时初始化 | `AppDelegate.applicationDidFinishLaunching` | `_ = PreferencesStore.shared` | 触发迁移+登录启动 |
 | 修改登录启动 | 菜单 / 恢复窗口 / 设置页 Toggle | `PreferencesStore.setLaunchAtLogin` | 待批准时打开系统登录项，不把开关显示成开 |
 | 登录启程刷新 | 启动/设置页/恢复窗口 appear | `syncLaunchAtLoginFromSystem` | 回读系统状态 |
-| 菜单栏图标显隐 | 菜单 Hide / 恢复窗口 Show | `PreferencesStore.setMenuBarIconVisible` | 键不存在 = 显示；隐藏立刻出示恢复窗口 |
+| 菜单栏图标显隐 | 菜单 Hide / 恢复窗口 Show | `PreferencesStore.menuBarIconVisible` | 键不存在 = 显示；**隐藏当下禁止弹恢复窗**，再次打开或「打开主窗口」才出示 |
 | 打开设置窗口 | 菜单栏 `SettingsLink` | `SettingsView` | 七页签 |
 | 打开恢复主窗口 | 菜单 Open Main Window / 再次打开 | `RecoveryWindowController.show` | 带标题，点外面不关 |
 

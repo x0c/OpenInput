@@ -101,7 +101,7 @@ flowchart TD
 | 启动监控 | `AppDelegate.applicationDidFinishLaunching` | `AutoShowMonitor.shared.start()` | 注册三路监听 |
 | 判定触发 | `AutoShowMonitor.evaluate()` | 内部 `AppMemoryStore` 查询 | 含防抖 |
 | 应用记忆查询 | `AppMemoryStore.shouldAutoShow(bundleIdentifier:)` | 全局开关+记忆列表 | 两者均为 true 才返回 true |
-| 记忆写入（成功注入） | `InputPanelController.submitAndHide` | `rememberUsed` | 自动开 |
+| 记忆写入（成功注入） | `InputPanelController.submitAndHide`（inject 成功后） | `rememberUsed` | 自动开；注入失败不得调用 |
 | 记忆写入（主动关） | `InputPanelController.dismiss` | `rememberDismissed` | 自动关 |
 | 用户管理 | 设置页 AutoShowSettingsView | `setAutoShow`/`remove`/`clear` | 逐应用开关 |
 
@@ -138,7 +138,7 @@ flowchart TD
 - **AI 易错点**：所有回调必须 `DispatchQueue.main.async` 桥回 MainActor，禁止在回调内 `Task { @MainActor }`（Carbon/AX 回调线程 → SIGSEGV）。
 - 【禁止】在 `evaluate` 中直接 `InputPanelController.shared.show()`——必须先过四条门控（总开关/权限/可见性/抑制窗）。
 - 【禁止】把 `suppressUntil` 改成永久抑制——AutoShow 是产品主动呼出，抑制只用于防「弹窗→用户操作→又弹」的循环。
-- 【隐性】`AppMemoryStore.rememberDismissed` 与 `submitAndHide` 里的 `rememberUsed` 必须成对维护：用户关闭行为会关掉自动弹，误写会把记忆翻转。
+- 【隐性】`AppMemoryStore.rememberDismissed` 与 `submitAndHide` 里的 `rememberUsed` 必须成对维护：用户关闭行为会关掉自动弹，误写会把记忆翻转。**`rememberUsed` 只能在 `TextInjector.inject` 成功之后调用**——提交失败（无目标 / 无权限 / 粘贴事件失败）若提前调用，会把该应用自动弹出错误打开。
 - 【隐性】AXObserver `attach` 的 `refcon` 常规：`Unmanaged.passUnretained(self).toOpaque()` 回调里 `takeUnretainedValue`——不能持有强引用防循环引用。
 - 【隐性】`detach` 时先移除 AXObserver 通知与 runloop source，再置空 `axObserver`/`observedPID`，否则留僵尸回调。
 - 【叫法统一】「自动弹出」主称谓；代码中 `shouldAutoShow`/`scheduleEvaluate`/`evaluate`；「抑制」= `suppressBriefly`。
