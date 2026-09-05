@@ -180,4 +180,4 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 - 待补充：未签名构建下 LaunchAgent 回退需在 Mac 上运行时验证。
 - 待确认：`InsertionMethod` 后续是否会启用 typing（当前 disabled）。
 
-<!-- 该文档由 doc-init 生成于 2026-08-08；定位：AI 修改偏好/登录启动/设置页时快速参考 -->
+<!-- 该文档整理/压缩于 2026-09-05 -->

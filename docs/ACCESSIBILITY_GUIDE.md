@@ -93,4 +93,4 @@ axObserver = nil; observedPID = nil
 - macOS 各版本 AX 行为差异的实测记录（尤其在 Chrome 上 `kAXSelectedTextChanged` 的可靠性）。
 - 权限被应用杀等异常场景的策略（当前是静默 fallback 到鼠标位置）。
 
-<!-- 该文档由 doc-init 生成于 2026-08-08；定位：AI 修改 AX 权限/坐标/通知相关代码时的公共机制参考 -->
+<!-- 该文档整理/压缩于 2026-09-05 -->
