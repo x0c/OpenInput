@@ -4,4 +4,4 @@
 
 | 任务 | 状态 | 影响范围 | 开始 | 最近更新 | 备注 |
 |---|---|---|---|---|---|
-| code-review 确定性缺陷 | 进行中 | AppDelegate / Recovery / TextInjector / AutoShow / History / Preferences / LaunchAtLogin | 2026-09-05 23:22 | 2026-09-05 23:22 | 只修有证据缺陷；不动 HandySwitch |
+| 正式发版 v1.1.3 | 进行中 | scripts/publish-release.sh、Release、GitHub | 2026-09-06 09:41 | 2026-09-06 09:41 | 清掉过期 code-review 占条；本机已 1.1.3，公开仍 1.1.2 |
