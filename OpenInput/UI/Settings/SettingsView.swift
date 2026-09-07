@@ -82,6 +82,18 @@ struct GeneralSettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section {
+                Button("menu.checkForUpdates") {
+                    AppDelegate.shared?.checkForUpdates()
+                }
+                .focusEffectDisabled()
+
+                Button("menu.quit") {
+                    AppDelegate.shared?.requestTermination()
+                }
+                .focusEffectDisabled()
+            }
+
             Section("settings.general.accessibility") {
                 HStack {
                     Image(systemName: accessibilityTrusted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
