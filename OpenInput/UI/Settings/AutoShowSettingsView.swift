@@ -14,7 +14,7 @@ struct AutoShowSettingsView: View {
                     Toggle("settings.autoshow.enable", isOn: $memory.autoShowMasterEnabled)
                     LabeledContent {
                         if accessibilityTrusted {
-                            Text("settings.autoshow.permission.granted").foregroundStyle(.secondary)
+                            Text("settings.general.accessibility.granted").foregroundStyle(.secondary)
                         } else {
                             Button("settings.accessibility.open_settings") {
                                 AccessibilityPermission.openSystemSettings()
@@ -75,6 +75,7 @@ struct AutoShowSettingsView: View {
                     }
                 }
                 .listStyle(.inset)
+                .toggleStyle(.switch)
             }
         }
         .frame(height: 400)
