@@ -8,7 +8,7 @@ macOS 原生悬浮输入面板应用：为单行输入框（地址栏、聊天�
 
 开机自启主路径走 MacKit；LaunchAgent 回退只留在本应用内，且不会自动重装。待系统批准不得显示成已开启。
 
-本机已覆盖安装 1.1.4 (9)。找回窗已点到。设置 › 通用含检查更新与退出对等入口。公开更新三种网络结果与开机自启重新登录未测。改、评审或排查菜单栏、隐藏图标、开机自启、再次打开或恢复窗口前**必读** [菜单栏、隐藏图标与恢复窗口](~/Codes/OpenInput/docs/MENU_BAR_LIFECYCLE_GUIDE.md)（不读会把输入小窗当成恢复面，或隐藏图标后找不到应用）。禁止一次藏多个应用的图标。
+本机已覆盖安装 1.1.5 (10)，正式设置页已从原生菜单打开并截图。找回窗的既有交互证据来自 1.1.4，不外推为新版实测。设置 › 通用含检查更新与退出对等入口。公开更新三种网络结果与开机自启重新登录未测。改、评审或排查菜单栏、隐藏图标、开机自启、再次打开或恢复窗口前**必读** [菜单栏、隐藏图标与恢复窗口](~/Codes/OpenInput/docs/MENU_BAR_LIFECYCLE_GUIDE.md)（不读会把输入小窗当成恢复面，或隐藏图标后找不到应用）。禁止一次藏多个应用的图标。
 
 ## 当前交付边界与数据处理
 
@@ -43,6 +43,8 @@ xcodebuild -scheme OpenInput -configuration Debug -derivedDataPath .doc-init-dd 
 Linux 开发机无法执行上述构建。菜单栏完成态的真机步骤见 [菜单栏、隐藏图标与恢复窗口](~/Codes/OpenInput/docs/MENU_BAR_LIFECYCLE_GUIDE.md) 文末。
 
 ## 文档导航
+
+Read the documents relevant to the current task before deciding or changing behavior.
 
 - `docs/INPUT_PANEL_KNOWLEDGE_BASE.md`：改、评审或排查小窗显隐、定位、提交/取消、边框焦点态、热键呼出，或听写开关在小窗里的接线前**必读**。不读会把提交改成直接注入、隐藏时漏停听写，或在麦克风授权窗弹出时把小窗关掉。
 - `docs/VOICE_INPUT_KNOWLEDGE_BASE.md`：改、评审或排查语音听写、麦克风授权、提交时自动清理、「还原上次清理」、听写语言或端侧模型前**必读**。不读会接到云端识别、在旧系统上硬编听写、漏掉正式包麦克风声明，或把清理做成按钮。
