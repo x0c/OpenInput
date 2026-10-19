@@ -82,10 +82,12 @@ struct VoiceSettingsView: View {
                 HStack {
                     TextField("", text: $newFrom, prompt: Text("settings.voice.replacements.from"))
                         .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                         .accessibilityLabel(Text("settings.voice.replacements.from"))
                     Image(systemName: "arrow.right").foregroundStyle(.secondary).accessibilityHidden(true)
                     TextField("", text: $newTo, prompt: Text("settings.voice.replacements.to"))
                         .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
                         .accessibilityLabel(Text("settings.voice.replacements.to"))
                     Button("settings.voice.replacements.add") { addReplacement() }
                         .disabled(newFrom.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

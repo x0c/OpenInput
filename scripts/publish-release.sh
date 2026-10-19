@@ -63,7 +63,7 @@ fi
 step "归档发布版本 v${version}（内部构建号 ${build_number}）"
 xcodegen generate
 rm -rf "${archive_path}" "${export_dir}" "${dmg_path}" "${zip_path}"
-xcodebuild -project OpenInput.xcodeproj -scheme OpenInput -configuration Release -destination 'generic/platform=macOS' -derivedDataPath "${BUILD_DIR}/DerivedData" -archivePath "${archive_path}" -allowProvisioningUpdates 'ARCHS=arm64 x86_64' ONLY_ACTIVE_ARCH=NO archive 2>&1 | tee "${BUILD_DIR}/archive.log"
+xcodebuild -project OpenInput.xcodeproj -scheme OpenInput -configuration Release -destination 'generic/platform=macOS' -derivedDataPath "${BUILD_DIR}/DerivedData" -archivePath "${archive_path}" -allowProvisioningUpdates 'ARCHS=arm64 x86_64' ONLY_ACTIVE_ARCH=NO clean archive 2>&1 | tee "${BUILD_DIR}/archive.log"
 xcodebuild -exportArchive -archivePath "${archive_path}" -exportOptionsPlist ExportOptions.plist -exportPath "${export_dir}" 2>&1 | tee "${BUILD_DIR}/export.log"
 [[ -d "${app_path}" ]] || die "发布应用产物不存在"
 
