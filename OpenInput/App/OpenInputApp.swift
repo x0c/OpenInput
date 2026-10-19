@@ -18,7 +18,15 @@ struct OpenInputApp: App {
         Settings {
             SettingsView()
         }
-        .commands { SettingsPresenterCommands() }
+
+        #if DEBUG
+        if #available(macOS 15, *) {
+            Window("Settings inspection", id: "settings-inspection") {
+                SettingsInspectionLauncher()
+            }
+            .defaultLaunchBehavior(CommandLine.arguments.contains("-OpenInputInspectSettings") ? .presented : .suppressed)
+        }
+        #endif
     }
 
     /// 键不存在时 PreferencesStore 已按显示处理；系统摘掉图标会把绑定写成 false。
@@ -69,7 +77,7 @@ private struct MenuBarContentView: View {
 
         Divider()
 
-        Button("menu.settings") { SettingsWindowController.shared.show() }
+        SettingsLink { Text("menu.settings") }
 
         Button("menu.checkForUpdates") {
             AppDelegate.shared?.checkForUpdates()
@@ -82,3 +90,23 @@ private struct MenuBarContentView: View {
         }
     }
 }
+
+#if DEBUG
+private struct SettingsInspectionLauncher: View {
+    @Environment(\.openSettings) private var openSettings
+    @Environment(\.dismissWindow) private var dismissWindow
+
+    var body: some View {
+        Color.clear.frame(width: 1, height: 1)
+            .task {
+                if CommandLine.arguments.contains("-OpenInputInspectDark") {
+                    NSApp.appearance = NSAppearance(named: .darkAqua)
+                } else {
+                    NSApp.appearance = NSAppearance(named: .aqua)
+                }
+                openSettings()
+                dismissWindow(id: "settings-inspection")
+            }
+    }
+}
+#endif

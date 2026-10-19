@@ -12,22 +12,16 @@ struct AutoShowSettingsView: View {
             Form {
                 Section {
                     Toggle("settings.autoshow.enable", isOn: $memory.autoShowMasterEnabled)
-
-                }
-
-                Section("settings.autoshow.permission") {
-                    HStack {
-                        Image(systemName: accessibilityTrusted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(accessibilityTrusted ? .green : .orange)
-                        Text(accessibilityTrusted
-                            ? "settings.autoshow.permission.granted"
-                            : "settings.autoshow.permission.denied")
-                        Spacer()
-                        Button("settings.accessibility.open_settings") {
-                            AccessibilityPermission.openSystemSettings()
-                            accessibilityTrusted = AccessibilityPermission.isTrusted
+                    LabeledContent {
+                        if accessibilityTrusted {
+                            Text("settings.autoshow.permission.granted").foregroundStyle(.secondary)
+                        } else {
+                            Button("settings.accessibility.open_settings") {
+                                AccessibilityPermission.openSystemSettings()
+                                accessibilityTrusted = AccessibilityPermission.isTrusted
+                            }
                         }
-                    }
+                    } label: { Text("settings.autoshow.permission") }
                 }
             }
             .settingsFormStyle(fallbackHeight: 180)

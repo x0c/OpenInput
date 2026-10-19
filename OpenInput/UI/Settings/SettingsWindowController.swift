@@ -5,15 +5,9 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
-    var present: (() -> Void)?
     private weak var window: NSWindow?
     private let activationSession = AccessoryActivationSession()
     private var observers: [NSObjectProtocol] = []
-
-    func show() {
-        present?()
-        NSApp.activate()
-    }
 
     func close() { window?.performClose(nil) }
 
@@ -62,13 +56,3 @@ struct SettingsWindowObserver: NSViewRepresentable {
     }
 }
 
-struct SettingsPresenterCommands: Commands {
-    @Environment(\.openSettings) private var openSettings
-
-    var body: some Commands {
-        CommandGroup(after: .appSettings) {
-            Color.clear.frame(width: 0, height: 0)
-                .onAppear { SettingsWindowController.shared.present = { openSettings() } }
-        }
-    }
-}
