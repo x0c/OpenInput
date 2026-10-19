@@ -15,6 +15,8 @@ NOTARY_KEY_ID="${NOTARY_KEY_ID:-D7YQ9HD7D6}"
 NOTARY_ISSUER="${NOTARY_ISSUER:-c98fe4b8-d1bf-4b4a-b998-9eb8f3be9fe4}"
 SPARKLE_ACCOUNT="openinput.x0c"
 BUILD_DIR="${ROOT_DIR}/build/release"
+RESUME_NOTARIZED=false
+[[ "${1:-}" == "--resume-notarized" ]] && RESUME_NOTARIZED=true
 
 die() { printf '\n发布失败：%s\n' "$*" >&2; exit 1; }
 step() { printf '\n▶ %s\n' "$*"; }
@@ -60,12 +62,20 @@ if curl -fsSL "${UPDATE_FEED_URL}" -o "${current_feed}"; then
   [[ ! "${published_build}" =~ ^[0-9]+$ || "${build_number}" -ge "${published_build}" ]] || die "拒绝回退公开构建号"
 fi
 
+if [[ "${RESUME_NOTARIZED}" == true ]]; then
+  [[ -n "${PREPARED_SOURCE_COMMIT:-}" ]] || die "恢复发布需要明确的制品源码提交"
+  git diff --quiet "${PREPARED_SOURCE_COMMIT}" -- OpenInput project.yml OpenInput.xcodeproj ExportOptions.plist || die "应用构建输入已改变，不能复用制品"
+  [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${app_path}/Contents/Info.plist")" == "${build_number}" ]] || die "制品构建号不匹配"
+  [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${app_path}/Contents/Info.plist")" == "${version}" ]] || die "制品展示版本不匹配"
+else
 step "归档发布版本 v${version}（内部构建号 ${build_number}）"
 xcodegen generate
 rm -rf "${archive_path}" "${export_dir}" "${dmg_path}" "${zip_path}"
 xcodebuild -project OpenInput.xcodeproj -scheme OpenInput -configuration Release -destination 'generic/platform=macOS' -derivedDataPath "${BUILD_DIR}/DerivedData" -archivePath "${archive_path}" -allowProvisioningUpdates 'ARCHS=arm64 x86_64' ONLY_ACTIVE_ARCH=NO clean archive 2>&1 | tee "${BUILD_DIR}/archive.log"
 xcodebuild -exportArchive -archivePath "${archive_path}" -exportOptionsPlist ExportOptions.plist -exportPath "${export_dir}" 2>&1 | tee "${BUILD_DIR}/export.log"
 [[ -d "${app_path}" ]] || die "发布应用产物不存在"
+
+fi
 
 step "验证签名与发布权限"
 sign_info="$(codesign -dv --verbose=2 "${app_path}" 2>&1)"
@@ -75,6 +85,14 @@ grep -q 'flags=.*runtime' <<<"${sign_info}" || die "没有启用加固运行时"
 ! grep -q 'get-task-allow' <<<"${entitlements}" || die "发布包含调试权限"
 codesign --verify --deep --strict --verbose=2 "${app_path}"
 
+stage="$(mktemp -d)"
+updates_dir="$(mktemp -d)"
+trap 'rm -rf "${stage}" "${updates_dir}"' EXIT
+if [[ "${RESUME_NOTARIZED}" == true ]]; then
+  xcrun stapler validate "${app_path}"
+  xcrun stapler validate "${dmg_path}"
+  spctl -a -vvv -t install "${dmg_path}"
+else
 step "公证并装订导出的正式应用"
 ditto -c -k --keepParent "${app_path}" "${BUILD_DIR}/OpenInput-notarize.zip"
 notarize_and_wait "${BUILD_DIR}/OpenInput-notarize.zip"
@@ -82,9 +100,6 @@ xcrun stapler staple "${app_path}"
 xcrun stapler validate "${app_path}"
 
 step "制作拖拽安装镜像并提交苹果公证"
-stage="$(mktemp -d)"
-updates_dir="$(mktemp -d)"
-trap 'rm -rf "${stage}" "${updates_dir}"' EXIT
 ditto "${app_path}" "${stage}/OpenInput.app"
 ln -s /Applications "${stage}/Applications"
 hdiutil create -volname "OpenInput" -srcfolder "${stage}" -ov -format UDZO "${dmg_path}"
@@ -92,6 +107,8 @@ notarize_and_wait "${dmg_path}"
 xcrun stapler staple "${dmg_path}"
 xcrun stapler validate "${dmg_path}"
 spctl -a -vvv -t install "${dmg_path}"
+
+fi
 
 step "覆盖安装到本机并启动验证"
 swift scripts/manage-installed-app.swift stop
