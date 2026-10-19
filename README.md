@@ -8,6 +8,8 @@ macOS native floating input panel for awkward single-line fields (URL bars, chat
 
 Display name: **智能输入小窗**
 
+[简体中文](README.zh-CN.md)
+
 ## Features
 
 - Global hotkey show / hide (default `⌥⌘I`)
@@ -23,9 +25,19 @@ Display name: **智能输入小窗**
 
 ## Install
 
-Download the latest `OpenInput-*.dmg` from the [releases page](https://github.com/x0c/OpenInput/releases), open it, and drag OpenInput to Applications. The app is signed and notarized by Apple. Future versions are offered inside the app automatically.
+Download and open the signed, notarized installer, then drag OpenInput to Applications:
+
+```bash
+curl -fL https://github.com/x0c/OpenInput/releases/download/v1.1.5/OpenInput-1.1.5.dmg -o /tmp/OpenInput.dmg && open /tmp/OpenInput.dmg
+```
+
+[Other releases](https://github.com/x0c/OpenInput/releases). Future updates are offered inside the app automatically.
 
 Requirements: macOS 14+. Voice dictation requires macOS 26 or later.
+
+## Settings
+
+![OpenInput Settings](docs/images/settings.png)
 
 ## Build from source
 

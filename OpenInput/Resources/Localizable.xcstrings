@@ -2637,13 +2637,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Return: insert · Shift-Return: new line · Escape: close · ↑/↓: history · Command-Delete: delete history · Tab: complete"
+            "value": "Return: insert · Shift-Return: new line · Escape: close · ↑/↓: history · Command-Delete: delete history · Tab: tab character"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Return：插入 · Shift-Return：换行 · Escape：关闭 · ↑/↓：历史 · Command-Delete：删除历史 · Tab：补全"
+            "value": "Return：插入 · Shift-Return：换行 · Escape：关闭 · ↑/↓：历史 · Command-Delete：删除历史 · Tab：制表符"
           }
         }
       }

@@ -185,3 +185,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 - 待确认：`InsertionMethod` 后续是否会启用 typing（当前 disabled）。
 
 <!-- 该文档整理/压缩于 2026-09-05 -->
+
+### 1.1.5 static visual acceptance
+
+Native Settings-scene inspection of the installed Debug app passed all four panes in English/light and Simplified Chinese/dark. Width is 480 points; complete window heights are General 474, Voice 391, App Memory/History 488. Images were inspected at preserved pixel dimensions. Real app-memory/history rows were displayed without changing their data. Native switches, aligned picker/slider controls, all toolbar labels, app/version/update/quit and history search are visible; no settings scrollbar or clipped settings row. A final replacement-prompt correction is validated separately after this capture set. Conditional login approval, denied permissions/older OS and physical keyboard/VoiceOver remain unverified under lock; no microphone or destructive user-content action was invoked.
