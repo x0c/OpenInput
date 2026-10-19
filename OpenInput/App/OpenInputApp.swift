@@ -97,7 +97,7 @@ private struct SettingsInspectionLauncher: View {
     @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
-        Color.clear.frame(width: 1, height: 1)
+        Text(verbatim: "Settings inspection").frame(width: 280, height: 100)
             .task {
                 if CommandLine.arguments.contains("-OpenInputInspectDark") {
                     NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -105,6 +105,13 @@ private struct SettingsInspectionLauncher: View {
                     NSApp.appearance = NSAppearance(named: .aqua)
                 }
                 openSettings()
+                do { try await Task.sleep(for: .seconds(1)) } catch { return }
+                let windows = NSApp.windows.map { "\($0.title): visible=\($0.isVisible), frame=\($0.frame)" }.joined(separator: "\n")
+                let directory = URL.homeDirectory.appending(path: ".config/openinput/development")
+                do {
+                    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                    try windows.write(to: directory.appending(path: "settings-inspection.txt"), atomically: true, encoding: .utf8)
+                } catch { print("Settings inspection evidence failed: \(error)") }
                 dismissWindow(id: "settings-inspection")
             }
     }
