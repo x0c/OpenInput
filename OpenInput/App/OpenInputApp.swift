@@ -18,7 +18,6 @@ struct OpenInputApp: App {
         Settings {
             SettingsView()
         }
-        .commands { SettingsPresenterCommands() }
 
     }
 

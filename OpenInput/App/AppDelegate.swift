@@ -24,6 +24,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppDelegate.shared = self
     }
 
+    #if DEBUG
+    private var inspectSettings: (() -> Void)?
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        guard CommandLine.arguments.contains("-OpenInputInspectSettings") else { return }
+        if #available(macOS 26, *) {
+            let scenes = NSHostingSceneRepresentation {
+                Settings { SettingsView() }
+            }
+            NSApp.addSceneRepresentation(scenes)
+            inspectSettings = { scenes.environment.openSettings() }
+        }
+    }
+    #endif
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
         // 常驻菜单栏应用，绝不切回 .regular（那会出现 Dock 图标）。
@@ -56,6 +71,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         AutoShowMonitor.shared.start()
         TextRefinementService.shared.refreshAvailability()
+
+        #if DEBUG
+        if let inspectSettings {
+            NSApp.appearance = NSAppearance(named: CommandLine.arguments.contains("-OpenInputInspectDark") ? .darkAqua : .aqua)
+            DispatchQueue.main.async { inspectSettings() }
+        }
+        #endif
 
         let isLoginLaunch = LoginLaunchDetector.isLaunchedAsLoginItem
         if MenuBarReopenPolicy.shouldShowRecoveryWindow(
