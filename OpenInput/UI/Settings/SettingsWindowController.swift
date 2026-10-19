@@ -5,9 +5,26 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
+    private var present: (() -> Void)?
+    #if DEBUG
+    private var didInspect = false
+    #endif
     private weak var window: NSWindow?
     private let activationSession = AccessoryActivationSession()
     private var observers: [NSObjectProtocol] = []
+
+    func install(_ action: @escaping () -> Void) {
+        present = action
+        #if DEBUG
+        if CommandLine.arguments.contains("-OpenInputInspectSettings"), !didInspect {
+            didInspect = true
+            DispatchQueue.main.async {
+                NSApp.appearance = NSAppearance(named: CommandLine.arguments.contains("-OpenInputInspectDark") ? .darkAqua : .aqua)
+                self.present?()
+            }
+        }
+        #endif
+    }
 
     func close() { window?.performClose(nil) }
 
@@ -56,3 +73,12 @@ struct SettingsWindowObserver: NSViewRepresentable {
     }
 }
 
+struct SettingsPresenterCommands: Commands {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some Commands {
+        let action = openSettings
+        let _ = SettingsWindowController.shared.install { action() }
+        CommandGroup(after: .appSettings) { }
+    }
+}
