@@ -1,5 +1,9 @@
 # OpenInput
 
+<p align="center">
+  <img src="docs/images/app-icon.png" width="128" height="128" alt="OpenInput app icon">
+</p>
+
 macOS native floating input panel for awkward single-line fields (URL bars, chat boxes, subject lines, etc.). Edit comfortably in a small window, then press **Return** to paste back into the original field.
 
 Display name: **智能输入小窗**

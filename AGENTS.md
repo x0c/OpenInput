@@ -8,7 +8,7 @@ macOS 原生悬浮输入面板应用：为单行输入框（地址栏、聊天�
 
 开机自启主路径走 MacKit；LaunchAgent 回退只留在本应用内，且不会自动重装。待系统批准不得显示成已开启。
 
-本机已覆盖安装 1.1.4 (9)。找回窗已点到。设置 › 通用含检查更新与退出对等入口。公开更新三种网络结果与开机自启重新登录未测。改、评审或排查菜单栏、隐藏图标、开机自启、再次打开或恢复窗口前**必读** [菜单栏、隐藏图标与恢复窗口](docs/MENU_BAR_LIFECYCLE_GUIDE.md)（不读会把输入小窗当成恢复面，或隐藏图标后找不到应用）。禁止一次藏多个应用的图标。
+本机已覆盖安装 1.1.4 (9)。找回窗已点到。设置 › 通用含检查更新与退出对等入口。公开更新三种网络结果与开机自启重新登录未测。改、评审或排查菜单栏、隐藏图标、开机自启、再次打开或恢复窗口前**必读** [菜单栏、隐藏图标与恢复窗口](~/Codes/OpenInput/docs/MENU_BAR_LIFECYCLE_GUIDE.md)（不读会把输入小窗当成恢复面，或隐藏图标后找不到应用）。禁止一次藏多个应用的图标。
 
 ## 当前交付边界与数据处理
 
@@ -16,20 +16,20 @@ macOS 原生悬浮输入面板应用：为单行输入框（地址栏、聊天�
 
 - 保存的数据：成功注入的历史文本、应用自动弹出记忆，以及窗口和功能偏好（含是否自动听写、听写语言、替换词）；均仅保存于这台 Mac 的本地存储，用户可在应用设置中管理历史和应用记忆。
 - 当前未发现的行为：不上传或同步上述内容，也不建立网络连接。辅助功能权限只用于识别目标输入位置和将用户确认的文本粘贴回目标应用；麦克风只用于把用户说的话在本机转成文字。提交时的顺手清理若用到苹果端侧语言模型，也只在本机运行，且仅当用户机器本身已启用该能力时才会走；普通国行账号默认走不到这一档。若后续增加网络、同步、遥测、账号或第三方服务，必须先重新核对这段说明与隐私声明，不能沿用「纯本机」结论。
-- 改发布、签名、公证、更新源或版本号前，**必须先读并落实** [签名、公证与分发指南](../_standards/workspace-docs/swift-docs/macos-signing-notarization-distribution.md)，否则会发出无法安装或无法更新的版本。发布由 `scripts/publish-release.sh` 统一执行：它归档并导出 Developer ID 应用、提交公证、装订票据、制作 DMG、生成 Sparkle 更新清单，把首装包与清单一并发到源码仓公开 Release（禁止另建更新仓），并以匿名下载复核。版本展示号和内部构建号同时递增；内部构建号是更新判定的权威。
+- 改发布、签名、公证、更新源或版本号前，**必须先读并落实** [签名、公证与分发指南](~/Codes/_standards/workspace-docs/swift-docs/macos-signing-notarization-distribution.md)，否则会发出无法安装或无法更新的版本。发布由 `scripts/publish-release.sh` 统一执行：它归档并导出 Developer ID 应用、提交公证、装订票据、制作 DMG、生成 Sparkle 更新清单，把首装包与清单一并发到源码仓公开 Release（禁止另建更新仓），并以匿名下载复核。版本展示号和内部构建号同时递增；内部构建号是更新判定的权威。
 
-通用工程规范：[Swift 规范](../_standards/swift.md)
+通用工程规范：[Swift 规范](~/Codes/_standards/swift.md)
 
 ## 代码约定
 
 - XcodeGen 工程：`project.yml` 是唯一真实来源，改工程配置后必须重跑 `xcodegen generate`；生成的 `.xcodeproj` 不手改、不提交手工改动。
 - 技术栈：SwiftUI 主体 + AppKit 补窗口/事件监听/AX；`KeyboardShortcuts` 负责全局热键；菜单栏生命周期与开机自启三态按需引用 MacKit（Core / LaunchAtLogin / Lifecycle），更新检查继续用 Sparkle，不要接 MacKitUpdater。
-- 共享可变状态统一 `@MainActor @Observable final class` + 单例（`.shared`）；跨线程回调一律 `DispatchQueue.main.async` 桥回 MainActor，禁止在 Carbon/AX 回调里直接 `Task { @MainActor }`（会 SIGSEGV，见 HotkeyService）。音频采集类禁止标 MainActor，tap 回调禁止对每个缓冲区 `Task { @MainActor }`（前者会 SIGTRAP 闪退，后者会乱序并拖垮听写），见 [语音听写知识库](docs/VOICE_INPUT_KNOWLEDGE_BASE.md)。
+- 共享可变状态统一 `@MainActor @Observable final class` + 单例（`.shared`）；跨线程回调一律 `DispatchQueue.main.async` 桥回 MainActor，禁止在 Carbon/AX 回调里直接 `Task { @MainActor }`（会 SIGSEGV，见 HotkeyService）。音频采集类禁止标 MainActor，tap 回调禁止对每个缓冲区 `Task { @MainActor }`（前者会 SIGTRAP 闪退，后者会乱序并拖垮听写），见 [语音听写知识库](~/Codes/OpenInput/docs/VOICE_INPUT_KNOWLEDGE_BASE.md)。
 - 偏好键与默认值成对集中声明（`PreferencesKeys` / `AppMemoryKeys`），禁止在使用处散落字面量键；键名统一「域.名」点分命名。
 - 用户可见文案一律走 `String(localized:)` + `Localizable.xcstrings` 本地化资源，禁止硬编码中文。
 - 所有错误路径（文件 IO、JSON 编解码、登录启动注册）必须写失败处理，不得 `try!` / 静默吞掉。
 - 注释与日志用中文（`os.Logger`）。
-- macOS 蓝框消除已落地：面板主输入框是自绘 `NSTextView`（无系统 focus ring），搜索框走 `.textFieldStyle(.plain)` + 自有焦点态描边（`@FocusState` overlay stroke），面板焦点态用自绘边框光晕（`BorderOverlayView`）；新增任何可聚焦控件必须保持这一约定。
+- Focus appearance follows [macOS baseline A4](~/Codes/_standards/workspace-docs/swift-docs/macos-app-baseline.md#a4-禁止任何控件外圈高光方框): disable system focus rings/effects and never add custom focus outlines. This supersedes the previous instruction to draw focus strokes. Settings use public native controls directly; the input panel’s existing text editor and border behavior remain governed by its product document.
 
 ## 验证
 
@@ -40,7 +40,7 @@ xcodebuild -scheme OpenInput -configuration Debug -derivedDataPath .doc-init-dd 
 
 启动验证：`open .doc-init-dd/Build/Products/Debug/OpenInput.app`（或覆盖安装到 /Applications 后启动）。运行依赖「辅助功能权限」：首次使用需在 系统设置 → 隐私与安全性 → 辅助功能 授权。
 
-Linux 开发机无法执行上述构建。菜单栏完成态的真机步骤见 [菜单栏、隐藏图标与恢复窗口](docs/MENU_BAR_LIFECYCLE_GUIDE.md) 文末。
+Linux 开发机无法执行上述构建。菜单栏完成态的真机步骤见 [菜单栏、隐藏图标与恢复窗口](~/Codes/OpenInput/docs/MENU_BAR_LIFECYCLE_GUIDE.md) 文末。
 
 ## 文档导航
 

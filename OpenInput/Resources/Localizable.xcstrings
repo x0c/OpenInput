@@ -2567,6 +2567,86 @@
           }
         }
       }
+    },
+    "settings.quit.short": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出"
+          }
+        }
+      }
+    },
+    "settings.voice.auto_start_short": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start dictation with panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开小窗时听写"
+          }
+        }
+      }
+    },
+    "settings.voice.cleanup_short": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean up on insert"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入时顺手清理"
+          }
+        }
+      }
+    },
+    "settings.voice.mic.allow": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Microphone…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许麦克风…"
+          }
+        }
+      }
+    },
+    "settings.shortcuts.key_help": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return: insert · Shift-Return: new line · Escape: close · ↑/↓: history · Command-Delete: delete history · Tab: complete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return：插入 · Shift-Return：换行 · Escape：关闭 · ↑/↓：历史 · Command-Delete：删除历史 · Tab：补全"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -233,7 +233,7 @@ final class SpeechDictationService {
 
             try await analyzer.start(inputSequence: stream)
             guard generation == startGeneration else {
-                try? await analyzer.cancelAndFinishNow()
+                await analyzer.cancelAndFinishNow()
                 return
             }
 

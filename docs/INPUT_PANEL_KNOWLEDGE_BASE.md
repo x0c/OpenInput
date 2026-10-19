@@ -181,3 +181,7 @@ flowchart TD
 - 待补充：真实设备上对 Chrome/Finder 等应用的锚点定位效果（需要有运行时验证截图）。
 
 <!-- 该文档整理/压缩于 2026-09-05 -->
+
+## Focus appearance correction (2026-10-19)
+
+The owner’s global macOS baseline A4 supersedes older custom-focus-stroke recipes. The settings retrofit found the same implementation copied into input-panel action buttons, history search/rows and the outer focused glow. Remove those focus-dependent strokes while retaining existing selection fills, the always-visible user-configurable panel border, keyboard focus bindings and accessibility labels. This bounded correction changes focus appearance only; it does not change the editor, microphone, input injection or panel lifecycle.

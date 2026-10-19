@@ -1,6 +1,8 @@
 import Foundation
 import AppKit
 
+enum SettingsPane: String { case general, voice, apps, history }
+
 struct HistoryItem: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
     var text: String

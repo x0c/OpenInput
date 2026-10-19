@@ -25,7 +25,7 @@
 - **偏好键（PreferencesKeys）**：静态常量集，点分命名 `域.键`（`panel.*` / `insertion.*` / `general.*` / `voice.*`），默认值成对声明（`*Default`）。
 - **登录启动注册（LaunchAtLoginService）**：签名应用的主路径走 MacKit 的系统登录项三态；ad-hoc / DerivedData Debug 构建只有用户显式开启时才在本应用内写 LaunchAgent plist。待批准不能显示成已开启。
 - **菜单栏图标显隐**：`menuBar.iconVisible`，键不存在 = 显示。隐藏后必须出示恢复主窗口，输入小窗不能当恢复面。详见 [菜单栏、隐藏图标与恢复窗口](MENU_BAR_LIFECYCLE_GUIDE.md)。
-- **设置窗口**：`SettingsView` 七个页签（通用 / 语音 / 快捷键 / 自动弹出 / 历史 / 外观 / 关于）。恢复主窗口是另一个带标题的小窗，不是这七页。
+- **设置窗口**：`SettingsView` 四个页签（通用 / 语音 / 应用记忆 / 历史）。恢复主窗口是另一个带标题的小窗，不是这四页。
 
 ## §1.5 架构概览
 
@@ -46,13 +46,10 @@ flowchart TD
         G6 --> G7[applyLaunchStatus 更新 UI 态]
     end
     subgraph 设置窗口侧
-        S1[SettingsView TabView 7标签] --> S2[GeneralSettingsView]
+        S1[SettingsView TabView 4标签] --> S2[GeneralSettingsView]
         S1 --> SVoice[VoiceSettingsView]
-        S1 --> S3[ShortcutsSettingsView]
         S1 --> S4[AutoShowSettingsView]
         S1 --> S5[HistorySettingsView]
-        S1 --> S6[AppearanceSettingsView]
-        S1 --> S7[AboutSettingsView]
     end
 ```
 
@@ -89,7 +86,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 | `OpenInput/Services/PreferencesStore.swift` | 偏好与迁移、登录启动联动 | PreferencesStore |
 | `OpenInput/Services/LaunchAtLoginService.swift` | MacKit 主路径 + 本应用 LaunchAgent 回退 | LaunchAtLoginService |
 | `OpenInput/Services/AppMemoryStore.swift` | 自动弹出记忆偏好 | `appMemory.autoShowMaster` |
-| `OpenInput/UI/Settings/SettingsView.swift` | 设置窗口七页签 | SettingsView |
+| `OpenInput/UI/Settings/SettingsView.swift` | 设置窗口四页签 | SettingsView |
 | `OpenInput/UI/Recovery/RecoveryWindowView.swift` | 隐藏图标后的轻量恢复主窗口 | RecoveryWindowView |
 | `OpenInput/UI/Settings/VoiceSettingsView.swift` | 语音页签 | VoiceSettingsView |
 
@@ -102,7 +99,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 | 修改登录启动 | 菜单 / 恢复窗口 / 设置页 Toggle | `PreferencesStore.setLaunchAtLogin` | 待批准时打开系统登录项，不把开关显示成开 |
 | 登录启程刷新 | 启动/设置页/恢复窗口 appear | `syncLaunchAtLoginFromSystem` | 回读系统状态 |
 | 菜单栏图标显隐 | 菜单 Hide / 恢复窗口 Show | `PreferencesStore.menuBarIconVisible` | 键不存在 = 显示；**隐藏当下禁止弹恢复窗**，再次打开或「打开主窗口」才出示 |
-| 打开设置窗口 | 菜单栏 `SettingsLink` | `SettingsView` | 七页签 |
+| 打开设置窗口 | 菜单栏 `SettingsLink` | `SettingsView` | 四页签 |
 | 打开恢复主窗口 | 菜单 Open Main Window / 再次打开 | `RecoveryWindowController.show` | 带标题，点外面不关 |
 
 ## §4 偏好键字段索引
@@ -126,13 +123,10 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 
 ### 设置页各页签（SettingsView）
 
-- **通用**：显示菜单栏图标 Toggle、登录项 Toggle（待批准时关着并引导去系统设置）、窗口尺寸选择器（切换时 `resetWindowSizeToDefault`+`updateBorder`）、注入方式 Picker（disabled）、自动空格 Toggle（disabled）、辅助功能权限条 + 打开设置按钮。
-- **语音**：下次自动听、麦克风授权状态、听写语言、提交时顺手清理、用户替换词。旧系统上听写相关控件灰掉。详见 [语音听写知识库](VOICE_INPUT_KNOWLEDGE_BASE.md)。
-- **快捷键**：全局热键 `⌥⌘I` 录制器（`ShortcutsSettingsView` ← 面板内快捷键说明）。
-- **自动弹出**：总开关 + 权限状态 + 已记忆应用列表（逐条开关 / 移除 / 清空）。
-- **历史**：搜索 + 多选删除 + 清空 + 导出（无）。
-- **外观**：边框颜色单选（8 色）+ 透明度滑杆 35%~100%。
-- **关于**：应用图标 / 名称 / 版本（读 Info.plist）/功能描述。
+- **通用**：全局快捷键录制、窗口尺寸、边框颜色、透明度、辅助功能权限、菜单栏图标与登录项开关、应用信息/检查更新/退出。未启用的注入方式和自动空格不再展示；存储键不变。
+- **语音**：下次自动听、麦克风授权、听写语言、提交清理与替换词；保留旧系统降级与端侧不可用原因。
+- **应用记忆**：自动弹出总开关、权限状态和已记忆应用列表（逐应用开关、移除、清空）。
+- **历史**：原生搜索框、历史列表、多选删除与清空。
 
 ## §5 登录启动注册表
 
@@ -148,7 +142,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 
 ## §6 核心业务规则与隐性约束
 
-- **AI 易错点**：新增偏好必须成对加键 + 默认值（`PreferencesKeys` + `*Default`），禁止使用处散落字面量；键名「域.名」。
+- **AI 易错点**：新增偏好必须成对加键 + 默认值（本地绑定：`PreferencesKeys` + `*Default`；迁移映射见本文 §2，键表见 §4）。通用规则见 [应用设置与偏好持久化 §二](~/Codes/_standards/workspace-docs/swift-docs/apple-app-preferences.md#二键的定义与命名裁定二)。
 - **AI 易错点**：用户可见文案 / 颜色 / 尺寸等分类枚举必须进 `*Option`（本地化 displayName），不要硬编码中文或色值。
 - 【禁止】直接改 `preferences.launchAtLogin` Bool——必须走 `setLaunchAtLogin`/`syncLaunchAtLoginFromSystem`，否则 UI 与系统状态脱节。
 - 【禁止】把待批准显示成已开启；开关只在系统真正会拉起时为开。
@@ -158,6 +152,15 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 - 【隐性】无启动注册 AUTO：`(autoAddSpaces) / (insertion.method=typing)` 在 UI 是 disabled，逻辑未启用——改设置页前先读这里，不要让 AI 误以为能用。
 - 【隐性】窗口尺寸切换 (`defaultWindowSize`) 时立即 `resetWindowSizeToDefault` 重置窗位 —— 不改偏好则窗口仍保持记忆 frame。
 - 【叫法统一】偏好主称谓 = `PreferencesStore`；「登录启动」= LaunchAtLoginService；「自动弹出记忆」单独在 AppMemoryStore，**不要**与偏好库混淆。
+
+## Settings visual contract (owner revision 2026-10-19)
+
+- Beauty and alignment are primary. Every settings control must fit without scrolling or scrollbars; only bounded lists of user-owned history, remembered apps or replacements may scroll within their list. Hiding scroll indicators with offscreen settings is not acceptance.
+- Use four native Settings-scene tabs: General (global shortcut, panel size/color/opacity, accessibility, menu icon, login startup, app identity/update/quit), Voice (dictation, permission, locale, cleanup and replacements), App Memory, History. Persist the selected pane through a named PreferencesKeys key/default. Remove the separate thin Shortcuts, Appearance and About panes. Remove disabled insertion/automatic-space controls and their unfinished-feature copy; retain their stored keys and behavior unchanged.
+- Use native grouped Form/Section, switch Toggle, Picker for named options, a continuous Slider for opacity and LabeledContent for aligned actions. Use the shipped KeyboardShortcuts.Recorder directly. Remove handmade focus strokes. About uses the existing app icon at 32 points, name/version and adjacent update/quit buttons. Conditional permission/login errors remain visible; teaching copy moves to help or is removed.
+- References inspected: NeatWebApp `Features/Settings/SettingsPanes.swift` grouped rows, measured form sizing and about row; existing OpenInput settings, voice, app-memory and history implementations for all bindings; HandySwitch scene-installed settings presentation/window observation. Reuse public API patterns; do not copy other products’ business logic or extract shared UI.
+- Official APIs: [TabView](https://developer.apple.com/documentation/swiftui/tabview), [OpenSettingsAction](https://developer.apple.com/documentation/swiftui/opensettingsaction), [onScrollGeometryChange](https://developer.apple.com/documentation/swiftui/view/onscrollgeometrychange(for:of:action:)), [NSSearchField](https://developer.apple.com/documentation/appkit/nssearchfield). Installed Xcode 27.2 SDK confirms macOS 14 settings action, macOS 15 scroll geometry/new Tab syntax, macOS 13 labeled content/scroll disabling. Preserve macOS 14 with native tabItem syntax and conservative complete-content form sizing there; current host cannot verify that older OS runtime. History search uses an actual NSSearchField bridge, not a search lookalike.
+- Do not change voice recognition, target injection, auto-show decisions, histories or user preference data during visual acceptance. Opening settings must not start listening or show the input panel. Launch-only pane/language overrides can capture empty real panes under lock; nonempty/destructive list behavior and physical keyboard/VoiceOver require separate evidence.
 
 ## §7 常见易忽略条件与验证路径
 
@@ -176,7 +179,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 
 ## §9 覆盖度与待补充项
 
-- 覆盖：迁移、全部键（含 `voice.*` 与 `menuBar.iconVisible`）、MacKit 主路径 + 本应用 LaunchAgent 回退、设置页七页签、ad-hoc 防重装、待批准不显示成已开启。
+- 覆盖：迁移、全部键（含 `voice.*` 与 `menuBar.iconVisible`）、MacKit 主路径 + 本应用 LaunchAgent 回退、设置页四页签、ad-hoc 防重装、待批准不显示成已开启。
 - 待补充：未签名构建下 LaunchAgent 回退需在 Mac 上运行时验证。
 - 待确认：`InsertionMethod` 后续是否会启用 typing（当前 disabled）。
 

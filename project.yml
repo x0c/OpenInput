@@ -50,8 +50,8 @@ targets:
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         COMBINE_HIDPI_IMAGES: YES
-        MARKETING_VERSION: "1.1.4"
-        CURRENT_PROJECT_VERSION: "9"
+        MARKETING_VERSION: "1.1.5"
+        CURRENT_PROJECT_VERSION: "10"
         OTHER_LDFLAGS: "$(inherited) -weak_framework FoundationModels"
     dependencies:
       - package: KeyboardShortcuts
@@ -72,6 +72,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         LSUIElement: true
+        LSApplicationCategoryType: public.app-category.utilities
         NSHighResolutionCapable: true
         NSPrincipalClass: NSApplication
         NSHumanReadableCopyright: "Copyright © 2026 x0c"

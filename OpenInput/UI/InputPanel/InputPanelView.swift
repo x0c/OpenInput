@@ -302,10 +302,6 @@ struct InputPanelRootView: View {
                     .background(
                         Circle().fill(focusedAction == .voice ? Color.accentColor.opacity(0.16) : .clear)
                     )
-                    .overlay {
-                        Circle()
-                            .strokeBorder(focusedAction == .voice ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
-                    }
                     .focusEffectDisabled()
                     .focused($focusedAction, equals: .voice)
                     .accessibilityLabel(Text("panel.voice.toggle.accessibility.label"))
@@ -329,10 +325,6 @@ struct InputPanelRootView: View {
                     .background(
                         Circle().fill(focusedAction == .history ? Color.accentColor.opacity(0.16) : .clear)
                     )
-                    .overlay {
-                        Circle()
-                            .strokeBorder(focusedAction == .history ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
-                    }
                     .focusEffectDisabled()
                     .focused($focusedAction, equals: .history)
                     .accessibilityLabel(Text("panel.history.accessibility.label"))
@@ -368,10 +360,6 @@ struct InputPanelRootView: View {
             .background(
                 Circle().fill(focusedAction == .close ? Color.accentColor.opacity(0.16) : .clear)
             )
-            .overlay {
-                Circle()
-                    .strokeBorder(focusedAction == .close ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
-            }
             .focusEffectDisabled()
             .focused($focusedAction, equals: .close)
             .accessibilityLabel(Text("panel.close"))
@@ -441,14 +429,6 @@ struct HistoryPopoverView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
-            // 自有焦点态：键盘导航聚焦时描边提示，替代系统蓝色焦点框。
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(
-                        searchFocused ? Color.accentColor.opacity(0.65) : .clear,
-                        lineWidth: 1.5
-                    )
-            )
 
             ScrollViewReader { proxy in
                 ScrollView {
@@ -506,10 +486,6 @@ private struct HistoryRow: View {
                 RoundedRectangle(cornerRadius: 5)
                     .fill(isSelected ? Color.accentColor.opacity(0.22) : Color.clear)
             )
-            .overlay {
-                RoundedRectangle(cornerRadius: 5)
-                    .strokeBorder(isFocused ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
-            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

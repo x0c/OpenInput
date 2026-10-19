@@ -18,6 +18,7 @@ struct OpenInputApp: App {
         Settings {
             SettingsView()
         }
+        .commands { SettingsPresenterCommands() }
     }
 
     /// 键不存在时 PreferencesStore 已按显示处理；系统摘掉图标会把绑定写成 false。
@@ -68,9 +69,7 @@ private struct MenuBarContentView: View {
 
         Divider()
 
-        SettingsLink {
-            Text("menu.settings")
-        }
+        Button("menu.settings") { SettingsWindowController.shared.show() }
 
         Button("menu.checkForUpdates") {
             AppDelegate.shared?.checkForUpdates()

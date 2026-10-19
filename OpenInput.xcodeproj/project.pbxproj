@@ -28,6 +28,7 @@
 		8769DA9507582C90FCDFC835 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E89B6255D83404E4A74997 /* PreferencesStore.swift */; };
 		890E24C47B1D67F61D0AA983 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DB7A83C151279C3000B0B06E /* Assets.xcassets */; };
 		90691929E5EB5E2385B89AA6 /* SpeechDictationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E23CBD2EEA8E4D731A599A /* SpeechDictationService.swift */; };
+		979C888A2BFAEC2CCBE25C86 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159BC64AC021836612C78A7A /* SettingsWindowController.swift */; };
 		9F8BF425952CCAA72BD61040 /* AXAttributeAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2101CD848B005D53AC2B9772 /* AXAttributeAccess.swift */; };
 		A920B6C0FCF949E3ED01C471 /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8698FAAE1823D157FCA28CBD /* HotkeyService.swift */; };
 		ACF5AC3CF50E460BA53DAA38 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F7AB416355B604006D208E29 /* InfoPlist.strings */; };
@@ -41,6 +42,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		159BC64AC021836612C78A7A /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		2101CD848B005D53AC2B9772 /* AXAttributeAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXAttributeAccess.swift; sourceTree = "<group>"; };
 		239C30789BD0F9985DA4A35B /* RecoveryWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryWindowView.swift; sourceTree = "<group>"; };
 		31752E80270E35A42031D7DA /* AppMemoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMemoryStore.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 			children = (
 				31B278A84464392BDD2AE67F /* AutoShowSettingsView.swift */,
 				AA29D0CD29819FBFEDEB468F /* SettingsView.swift */,
+				159BC64AC021836612C78A7A /* SettingsWindowController.swift */,
 				78418340FAEE35414018E0A8 /* VoiceSettingsView.swift */,
 			);
 			path = Settings;
@@ -310,6 +313,7 @@
 				B806226466492CB94C4907D7 /* RecoveryWindowController.swift in Sources */,
 				5419393CF4C58CC72334B1A5 /* RecoveryWindowView.swift in Sources */,
 				356CD141AC1C95A827B4E1ED /* SettingsView.swift in Sources */,
+				979C888A2BFAEC2CCBE25C86 /* SettingsWindowController.swift in Sources */,
 				90691929E5EB5E2385B89AA6 /* SpeechDictationService.swift in Sources */,
 				25E01CE54226B263DBEE9594 /* TextInjector.swift in Sources */,
 				D4E0149F2E617CFECD82BE1E /* TextRefinementService.swift in Sources */,
@@ -403,11 +407,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OpenInput/Resources/OpenInput.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenInput/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.1.5;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.openinput;
 				PRODUCT_NAME = OpenInput;
@@ -483,11 +487,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = OpenInput/Resources/OpenInput.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = OpenInput/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.1.4;
+				MARKETING_VERSION = 1.1.5;
 				OTHER_LDFLAGS = "$(inherited) -weak_framework FoundationModels";
 				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.openinput;
 				PRODUCT_NAME = OpenInput;

@@ -562,16 +562,6 @@ private final class BorderOverlayView: NSView {
         borderColor.setStroke()
         path.stroke()
 
-        if isFocused {
-            let glowInset = inset - 2
-            let glow = NSBezierPath(
-                roundedRect: bounds.insetBy(dx: glowInset, dy: glowInset),
-                xRadius: 11 - glowInset,
-                yRadius: 11 - glowInset
-            )
-            glow.lineWidth = 1.5
-            borderColor.withAlphaComponent(0.35).setStroke()
-            glow.stroke()
-        }
+
     }
 }

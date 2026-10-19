@@ -309,10 +309,12 @@ private actor AppleOnDeviceRefiner {
         defer { prewarm() }
 
         let prompt = "<原文>\n\(text)\n</原文>"
-        let response = try await session.respond(
-            to: prompt,
-            options: GenerationOptions(sampling: .greedy, temperature: 0)
-        )
+        #if compiler(>=6.4)
+        let options = GenerationOptions(samplingMode: .greedy, temperature: 0)
+        #else
+        let options = GenerationOptions(sampling: .greedy, temperature: 0)
+        #endif
+        let response = try await session.respond(to: prompt, options: options)
         let cleaned = RefinementOutputFilter.sanitize(response.content, input: text)
         try RefinementOutputFilter.validate(cleaned, against: text)
         return cleaned

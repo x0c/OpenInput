@@ -4,6 +4,8 @@ import Observation
 
 /// 偏好键与默认值成对集中声明；统一「域.名」点分命名，禁止在使用处散落字面量键。
 enum PreferencesKeys {
+    static let settingsPane = "settings.selectedPane"
+    static let settingsPaneDefault = SettingsPane.general
     static let borderColor = "panel.borderColor"
     static let panelOpacity = "panel.opacity"
     static let defaultWindowSize = "panel.defaultSize"

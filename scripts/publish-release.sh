@@ -51,11 +51,20 @@ app_path="${export_dir}/OpenInput.app"
 dmg_path="${BUILD_DIR}/OpenInput-${version}.dmg"
 zip_path="${BUILD_DIR}/OpenInput-${version}.zip"
 
+[[ -z "$(git status --porcelain)" ]] || die "发布前必须提交完整工作区"
+git push origin main
+
+current_feed="${BUILD_DIR}/current-appcast.xml"
+if curl -fsSL "${UPDATE_FEED_URL}" -o "${current_feed}"; then
+  published_build="$(xmllint --xpath 'string((//*[local-name()="version"])[1])' "${current_feed}" 2>/dev/null || true)"
+  [[ ! "${published_build}" =~ ^[0-9]+$ || "${build_number}" -ge "${published_build}" ]] || die "拒绝回退公开构建号"
+fi
+
 step "归档发布版本 v${version}（内部构建号 ${build_number}）"
 xcodegen generate
 rm -rf "${archive_path}" "${export_dir}" "${dmg_path}" "${zip_path}"
-xcodebuild -project OpenInput.xcodeproj -scheme OpenInput -configuration Release -destination 'platform=macOS' -derivedDataPath "${BUILD_DIR}/DerivedData" -archivePath "${archive_path}" -allowProvisioningUpdates archive
-xcodebuild -exportArchive -archivePath "${archive_path}" -exportOptionsPlist ExportOptions.plist -exportPath "${export_dir}"
+xcodebuild -project OpenInput.xcodeproj -scheme OpenInput -configuration Release -destination 'generic/platform=macOS' -derivedDataPath "${BUILD_DIR}/DerivedData" -archivePath "${archive_path}" -allowProvisioningUpdates 'ARCHS=arm64 x86_64' ONLY_ACTIVE_ARCH=NO archive 2>&1 | tee "${BUILD_DIR}/archive.log"
+xcodebuild -exportArchive -archivePath "${archive_path}" -exportOptionsPlist ExportOptions.plist -exportPath "${export_dir}" 2>&1 | tee "${BUILD_DIR}/export.log"
 [[ -d "${app_path}" ]] || die "发布应用产物不存在"
 
 step "验证签名与发布权限"
@@ -65,6 +74,12 @@ grep -q "Authority=${SIGN_IDENTITY}" <<<"${sign_info}" || die "不是 Developer 
 grep -q 'flags=.*runtime' <<<"${sign_info}" || die "没有启用加固运行时"
 ! grep -q 'get-task-allow' <<<"${entitlements}" || die "发布包含调试权限"
 codesign --verify --deep --strict --verbose=2 "${app_path}"
+
+step "公证并装订导出的正式应用"
+ditto -c -k --keepParent "${app_path}" "${BUILD_DIR}/OpenInput-notarize.zip"
+notarize_and_wait "${BUILD_DIR}/OpenInput-notarize.zip"
+xcrun stapler staple "${app_path}"
+xcrun stapler validate "${app_path}"
 
 step "制作拖拽安装镜像并提交苹果公证"
 stage="$(mktemp -d)"
@@ -76,7 +91,7 @@ hdiutil create -volname "OpenInput" -srcfolder "${stage}" -ov -format UDZO "${dm
 notarize_and_wait "${dmg_path}"
 xcrun stapler staple "${dmg_path}"
 xcrun stapler validate "${dmg_path}"
-spctl -a -vvv -t open "${dmg_path}"
+spctl -a -vvv -t install "${dmg_path}"
 
 step "覆盖安装到本机并启动验证"
 pkill -x OpenInput 2>/dev/null || true
@@ -108,18 +123,27 @@ step "发布首装镜像与更新包到源码仓"
 # 同一版本可安全重跑：已经存在的公开资产先复用并在最后做匿名下载验证，
 # 不重复上传，以免慢链路空耗时间或触发平台的“文件已存在”错误。
 if ! gh release view "v${version}" --repo "${SOURCE_REPOSITORY}" >/dev/null 2>&1; then
-  gh release create "v${version}" "${dmg_path}" "${updates_dir}/OpenInput-${version}.zip" "${updates_dir}/appcast.xml#appcast.xml" --repo "${SOURCE_REPOSITORY}" --title "OpenInput ${version}" --notes "OpenInput ${version} 已签名、公证的 macOS 安装包与应用内自动更新。"
-else
-  for asset_path in "${dmg_path}" "${updates_dir}/OpenInput-${version}.zip" "${updates_dir}/appcast.xml"; do
+  cat > "${updates_dir}/notes.md" <<'NOTES'
+## English
+- Refined Settings into four native tabs: General, Voice, App Memory and History.
+- Aligned system controls and a compact app identity/update/quit row; complete settings fit without scrolling.
+- Preserved preferences and voice/input behavior, removed unfinished controls and custom focus outlines.
+
+## 简体中文
+- 设置合并为通用、语音、应用记忆、历史四个原生页签。
+- 系统控件统一对齐，应用信息、更新和退出合并为一行；全部设置无需滚动。
+- 保留偏好与语音、输入行为，移除未启用控件和自绘焦点描边。
+NOTES
+  gh release create "v${version}" --repo "${SOURCE_REPOSITORY}" --target "$(git rev-parse HEAD)" --title "OpenInput ${version}" --notes-file "${updates_dir}/notes.md"
+
+fi
+for asset_path in "${dmg_path}" "${updates_dir}/OpenInput-${version}.zip" "${updates_dir}/appcast.xml"; do
     asset_name="$(basename "${asset_path}")"
     if ! gh release view "v${version}" --repo "${SOURCE_REPOSITORY}" --json assets --jq '.assets[].name' | grep -qx "${asset_name}"; then
       gh release upload "v${version}" "${asset_path}" --repo "${SOURCE_REPOSITORY}"
     fi
-  done
-fi
+done
 
-git add -A
-git commit -m "发布 OpenInput ${version} 正式自分发" || true
 # 发行页创建时远端已经有同名标签；再推同一标签会把整段发版判失败。
 git push origin main
 if ! git ls-remote --tags origin "refs/tags/v${version}" | grep -q .; then
@@ -128,7 +152,11 @@ if ! git ls-remote --tags origin "refs/tags/v${version}" | grep -q .; then
 fi
 
 step "匿名下载验收"
-curl -fsSL "${UPDATE_FEED_URL}" -o /dev/null
-curl -fsSL "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.zip" -o /dev/null
-curl -fsSL "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.dmg" -o /dev/null
+curl -fsSL "${UPDATE_FEED_URL}" -o "${BUILD_DIR}/anonymous-appcast.xml"
+grep -q "releases/download/v${version}/OpenInput-${version}.zip" "${BUILD_DIR}/anonymous-appcast.xml" || die "公开清单未指向当前版本"
+grep -q 'sparkle-signatures:' "${BUILD_DIR}/anonymous-appcast.xml" || die "公开清单本身未签名"
+curl -fsSL "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.zip" -o "${BUILD_DIR}/anonymous.zip"
+cmp "${zip_path}" "${BUILD_DIR}/anonymous.zip" || die "公开 ZIP 字节不一致"
+curl -fsSL "https://github.com/${SOURCE_REPOSITORY}/releases/download/v${version}/OpenInput-${version}.dmg" -o "${BUILD_DIR}/anonymous.dmg"
+cmp "${dmg_path}" "${BUILD_DIR}/anonymous.dmg" || die "公开 DMG 字节不一致"
 printf '发布完成：v%s（内部构建号 %s）\n' "${version}" "${build_number}"

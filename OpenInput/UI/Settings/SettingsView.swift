@@ -3,245 +3,144 @@ import SwiftUI
 import KeyboardShortcuts
 
 struct SettingsView: View {
+    @AppStorage(PreferencesKeys.settingsPane) private var pane = PreferencesKeys.settingsPaneDefault
+
     var body: some View {
-        TabView {
-            GeneralSettingsView()
-                .tabItem { Label("settings.general", systemImage: "gearshape") }
-            VoiceSettingsView()
-                .tabItem { Label("settings.voice", systemImage: "mic") }
-            ShortcutsSettingsView()
-                .tabItem { Label("settings.shortcuts", systemImage: "keyboard") }
-            AutoShowSettingsView()
-                .tabItem { Label("settings.appMemory", systemImage: "app.badge.checkmark") }
-            HistorySettingsView()
-                .tabItem { Label("settings.history", systemImage: "clock") }
-            AppearanceSettingsView()
-                .tabItem { Label("settings.appearance", systemImage: "paintpalette") }
-            AboutSettingsView()
-                .tabItem { Label("settings.about", systemImage: "info.circle") }
+        tabs
+            .frame(width: 480)
+            .fixedSize(horizontal: false, vertical: true)
+            .focusEffectDisabled()
+            .background(SettingsWindowObserver())
+            .onExitCommand { SettingsWindowController.shared.close() }
+    }
+
+    @ViewBuilder
+    private var tabs: some View {
+        if #available(macOS 15, *) {
+            TabView(selection: $pane) {
+                Tab("settings.general", systemImage: "gearshape", value: SettingsPane.general) { GeneralSettingsView() }
+                Tab("settings.voice", systemImage: "mic", value: SettingsPane.voice) { VoiceSettingsView() }
+                Tab("settings.appMemory", systemImage: "app.badge.checkmark", value: SettingsPane.apps) { AutoShowSettingsView() }
+                Tab("settings.history", systemImage: "clock", value: SettingsPane.history) { HistorySettingsView() }
+            }
+        } else {
+            TabView(selection: $pane) {
+                GeneralSettingsView().tabItem { Label("settings.general", systemImage: "gearshape") }.tag(SettingsPane.general)
+                VoiceSettingsView().tabItem { Label("settings.voice", systemImage: "mic") }.tag(SettingsPane.voice)
+                AutoShowSettingsView().tabItem { Label("settings.appMemory", systemImage: "app.badge.checkmark") }.tag(SettingsPane.apps)
+                HistorySettingsView().tabItem { Label("settings.history", systemImage: "clock") }.tag(SettingsPane.history)
+            }
         }
-        .frame(width: 520, height: 440)
     }
 }
 
 struct GeneralSettingsView: View {
-    private enum FocusTarget: Hashable {
-        case accessibilitySettings
-    }
-
     @State private var preferences = PreferencesStore.shared
     @State private var accessibilityTrusted = AccessibilityPermission.isTrusted
-    @FocusState private var focusedControl: FocusTarget?
 
     var body: some View {
         @Bindable var preferences = preferences
-
         Form {
             Section {
-                Toggle("menu.showMenuBarIcon", isOn: $preferences.menuBarIconVisible)
-
-                Toggle("settings.general.launchAtLogin", isOn: Binding(
-                    get: { preferences.launchAtLogin },
-                    set: { preferences.setLaunchAtLogin($0) }
-                ))
-                if let message = preferences.launchAtLoginMessage {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    if LaunchAtLoginService.currentStatus() == .needsApproval {
-                        Button("menu.openLoginItems") {
-                            LaunchAtLoginService.openSystemSettings()
-                        }
-                    }
-                }
-
+                KeyboardShortcuts.Recorder(String(localized: "settings.shortcuts.showHide"), name: .togglePanel)
+                    .help(Text("settings.shortcuts.key_help"))
                 Picker("settings.general.windowSize", selection: $preferences.defaultWindowSize) {
-                    ForEach(DefaultWindowSize.allCases) { size in
-                        Text(size.displayName).tag(size)
-                    }
+                    ForEach(DefaultWindowSize.allCases) { Text($0.displayName).tag($0) }
                 }
                 .onChange(of: preferences.defaultWindowSize) { _, _ in
                     preferences.resetWindowSizeToDefault()
                     InputPanelController.shared.updateBorder()
                 }
-
-                Picker("settings.general.insertion", selection: $preferences.insertionMethod) {
-                    ForEach(InsertionMethod.allCases) { method in
-                        Text(method.displayName).tag(method)
-                    }
-                }
-                .disabled(true)
-                Text("settings.general.insertion.note")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Toggle("settings.general.autoSpaces", isOn: $preferences.autoAddSpaces)
-                    .disabled(true)
-                Text("settings.general.autoSpaces.note")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Button("menu.checkForUpdates") {
-                    AppDelegate.shared?.checkForUpdates()
-                }
-                .focusEffectDisabled()
-
-                Button("menu.quit") {
-                    AppDelegate.shared?.requestTermination()
-                }
-                .focusEffectDisabled()
-            }
-
-            Section("settings.general.accessibility") {
-                HStack {
-                    Image(systemName: accessibilityTrusted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(accessibilityTrusted ? .green : .orange)
-                    Text(accessibilityTrusted
-                        ? "settings.general.accessibility.granted"
-                        : "settings.general.accessibility.denied")
-                    Spacer()
-                    Button(accessibilityTrusted ? "settings.general.refresh" : "settings.accessibility.open_settings") {
-                        AccessibilityPermission.openSystemSettings()
-                        accessibilityTrusted = AccessibilityPermission.isTrusted
-                    }
-                    .focusEffectDisabled()
-                    .focused($focusedControl, equals: .accessibilitySettings)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .strokeBorder(focusedControl == .accessibilitySettings ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
-                    }
-                    .accessibilityHint(Text("settings.accessibility.open.accessibility.hint"))
-                }
-            }
-        }
-        .formStyle(.grouped)
-        .padding()
-        .onAppear {
-            accessibilityTrusted = AccessibilityPermission.isTrusted
-            preferences.syncLaunchAtLoginFromSystem()
-        }
-        // 用户从系统设置返回后自动重检授权状态。
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            accessibilityTrusted = AccessibilityPermission.isTrusted
-            preferences.syncLaunchAtLoginFromSystem()
-        }
-    }
-}
-
-struct ShortcutsSettingsView: View {
-    @FocusState private var recorderFocused: Bool
-
-    var body: some View {
-        Form {
-            Section {
-                KeyboardShortcuts.Recorder(
-                    String(localized: "settings.shortcuts.showHide"),
-                    name: .togglePanel
-                )
-                .padding(4)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(recorderFocused ? Color.accentColor.opacity(0.12) : .clear)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(recorderFocused ? Color.accentColor.opacity(0.78) : .clear, lineWidth: 1.5)
-                }
-                .focusEffectDisabled()
-                .focused($recorderFocused)
-                .accessibilityHint(Text("settings.shortcuts.recorder.accessibility.hint"))
-            }
-            Section("settings.shortcuts.inner") {
-                LabeledContent("settings.shortcuts.insert", value: "↩ Return")
-                LabeledContent("settings.shortcuts.newline", value: "⇧↩ Shift+Return")
-                LabeledContent("settings.shortcuts.close", value: "esc")
-                LabeledContent("settings.shortcuts.browse", value: "↑ / ↓")
-                LabeledContent("settings.shortcuts.deleteHistory", value: "⌘⌫")
-                LabeledContent("settings.shortcuts.tab", value: "Tab")
-            }
-        }
-        .formStyle(.grouped)
-        .padding()
-    }
-}
-
-struct AppearanceSettingsView: View {
-    @State private var preferences = PreferencesStore.shared
-
-    var body: some View {
-        @Bindable var preferences = preferences
-
-        Form {
-            Section("settings.appearance.border") {
                 Picker("settings.appearance.color", selection: $preferences.borderColor) {
-                    ForEach(BorderColorOption.allCases) { color in
-                        HStack {
-                            Circle()
-                                .fill(Color(nsColor: color.nsColor))
-                                .frame(width: 12, height: 12)
-                            Text(color.displayName)
-                        }
-                        .tag(color)
+                    ForEach(BorderColorOption.allCases) { Text($0.displayName).tag($0) }
+                }
+                .onChange(of: preferences.borderColor) { _, _ in InputPanelController.shared.updateBorder() }
+                LabeledContent("settings.appearance.opacity") {
+                    HStack(spacing: 8) {
+                        Text(preferences.panelOpacity, format: .percent.precision(.fractionLength(0)))
+                            .foregroundStyle(.secondary).monospacedDigit().frame(width: 38, alignment: .trailing)
+                        Slider(value: $preferences.panelOpacity, in: 0.35...1)
+                            .labelsHidden().frame(width: 140)
+                            .accessibilityLabel(Text("settings.appearance.opacity"))
+                            .onChange(of: preferences.panelOpacity) { _, _ in InputPanelController.shared.updateBorder() }
                     }
                 }
-                .pickerStyle(.radioGroup)
-                .onChange(of: preferences.borderColor) { _, _ in
-                    InputPanelController.shared.updateBorder()
-                }
             }
-
-            Section("settings.appearance.opacity") {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("settings.appearance.opacity.value")
-                        Spacer()
-                        Text("\(Int((preferences.panelOpacity * 100).rounded()))%")
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
+            Section {
+                LabeledContent {
+                    if accessibilityTrusted {
+                        Text("settings.general.accessibility.granted").foregroundStyle(.secondary)
+                    } else {
+                        Button("settings.accessibility.open_settings") { AccessibilityPermission.openSystemSettings() }
                     }
-                    Slider(value: $preferences.panelOpacity, in: 0.35...1.0, step: 0.05)
-                        .onChange(of: preferences.panelOpacity) { _, _ in
-                            InputPanelController.shared.updateBorder()
-                        }
-                    Text("settings.appearance.opacity.note")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                } label: {
+                    Text("settings.general.accessibility")
                 }
             }
+            Section {
+                Toggle("menu.showMenuBarIcon", isOn: $preferences.menuBarIconVisible)
+                Toggle("settings.general.launchAtLogin", isOn: Binding(
+                    get: { preferences.launchAtLogin },
+                    set: { preferences.setLaunchAtLogin($0) }
+                ))
+                if let message = preferences.launchAtLoginMessage {
+                    if LaunchAtLoginService.currentStatus() == .needsApproval {
+                        LabeledContent {
+                            Button("menu.openLoginItems") { LaunchAtLoginService.openSystemSettings() }
+                        } label: {
+                            Label { Text(message).foregroundStyle(.secondary) } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                            }
+                        }
+                    } else { Text(message).font(.caption).foregroundStyle(.orange) }
+                }
+            }
+            Section { SettingsAboutRow() }
         }
-        .formStyle(.grouped)
-        .padding()
+        .settingsFormStyle(fallbackHeight: 540)
+        .onAppear(perform: refresh)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
+    }
+
+    private func refresh() {
+        accessibilityTrusted = AccessibilityPermission.isTrusted
+        preferences.syncLaunchAtLoginFromSystem()
     }
 }
 
-struct AboutSettingsView: View {
-    /// 跟随语言变化的显示名（InfoPlist.strings 提供 zh-Hans / en 两版）。
-    private var appDisplayName: String {
-        let localized = Bundle.main.localizedInfoDictionary?["CFBundleDisplayName"] as? String
-        return localized ?? (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "OpenInput")
-    }
-
+private struct SettingsAboutRow: View {
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "text.cursor")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-            Text(verbatim: appDisplayName)
-                .font(.title2.weight(.semibold))
-            Text(verbatim: "OpenInput")
-                .foregroundStyle(.secondary)
-            Text("settings.about.version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("settings.about.description")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
+        HStack(spacing: 10) {
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(verbatim: "OpenInput").fontWeight(.medium)
+                Text(verbatim: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }.accessibilityElement(children: .combine)
+            Spacer(minLength: 8)
+            Button("menu.checkForUpdates") { AppDelegate.shared?.checkForUpdates() }
+            Button("settings.quit.short") { AppDelegate.shared?.requestTermination() }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+    }
+}
+
+extension View {
+    func settingsFormStyle(fallbackHeight: CGFloat) -> some View {
+        formStyle(.grouped).toggleStyle(.switch).scrollDisabled(true)
+            .modifier(SettingsFormHeight(fallbackHeight: fallbackHeight))
+    }
+}
+
+private struct SettingsFormHeight: ViewModifier {
+    let fallbackHeight: CGFloat
+    @State private var contentHeight: CGFloat?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content.onScrollGeometryChange(for: CGFloat.self) { ceil($0.contentSize.height) } action: { _, height in
+                if height > 0 { contentHeight = height }
+            }.frame(height: contentHeight ?? fallbackHeight)
+        } else { content.frame(height: fallbackHeight) }
     }
 }

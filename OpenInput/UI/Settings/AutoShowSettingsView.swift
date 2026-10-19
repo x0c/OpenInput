@@ -12,9 +12,7 @@ struct AutoShowSettingsView: View {
             Form {
                 Section {
                     Toggle("settings.autoshow.enable", isOn: $memory.autoShowMasterEnabled)
-                    Text("settings.autoshow.description")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+
                 }
 
                 Section("settings.autoshow.permission") {
@@ -32,8 +30,7 @@ struct AutoShowSettingsView: View {
                     }
                 }
             }
-            .formStyle(.grouped)
-            .padding([.horizontal, .top])
+            .settingsFormStyle(fallbackHeight: 180)
 
             HStack {
                 Text("settings.autoshow.remembered")
@@ -51,7 +48,7 @@ struct AutoShowSettingsView: View {
                 ContentUnavailableView(
                     "settings.autoshow.empty.title",
                     systemImage: "app.badge.checkmark",
-                    description: Text("settings.autoshow.empty.description")
+                    description: nil
                 )
             } else {
                 List {
@@ -60,7 +57,7 @@ struct AutoShowSettingsView: View {
                             Image(nsImage: appIcon(for: app.bundleIdentifier))
                                 .resizable()
                                 .frame(width: 28, height: 28)
-                                .cornerRadius(6)
+                                .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(app.appName)
                                 Text(app.bundleIdentifier)
@@ -86,6 +83,8 @@ struct AutoShowSettingsView: View {
                 .listStyle(.inset)
             }
         }
+        .frame(height: 400)
+        .focusEffectDisabled()
         .onAppear {
             accessibilityTrusted = AccessibilityPermission.isTrusted
             if accessibilityTrusted {

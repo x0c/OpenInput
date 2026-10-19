@@ -15,7 +15,7 @@ OpenInput 是 macOS 原生应用（SwiftUI + AppKit + XcodeGen 生成工程）�
 ### 构建命令（Debug）
 
 ```bash
-cd /Users/geraltgraham/Codes/OpenInput
+cd ~/Codes/OpenInput
 xcodegen generate
 xcodebuild -scheme OpenInput -configuration Debug -derivedDataPath .doc-init-dd build
 ```
@@ -139,3 +139,10 @@ scripts/publish-release.sh
 - macOS 各版本窗口层级差别（`.floating` 在成组空间/全屏的实测）。
 
 <!-- 该文档整理/压缩于 2026-09-05 -->
+
+## Settings delivery diagnostic review (2026-10-19)
+
+- The complete fresh Debug build/analyzer log exposed an AVAuthorizationStatus import warning in VoiceSettingsView: import AVFoundation directly in its owning view. Remove an unnecessary `try?` on the nonthrowing [SpeechAnalyzer.cancelAndFinishNow](https://developer.apple.com/documentation/speech/speechanalyzer/cancelandfinishnow()) call, preserving cancellation semantics.
+- Adopt [GenerationOptions.init(samplingMode:temperature:maximumResponseTokens:)](https://developer.apple.com/documentation/foundationmodels/generationoptions/init(samplingmode:temperature:maximumresponsetokens:)) under Swift 6.4+, retaining the original spelling for the supported older Xcode compiler. Installed SDK declares the renamed initializer back-deployed to macOS 26; greedy/temperature parameters remain unchanged.
+- Set Utilities in generated Info.plist to resolve the archive’s missing-category diagnostic. AppIntents extraction remains a tool-generated warning: this app defines no intents or linked AppIntents framework, so no feature depends on that metadata. The installed macOS 27.2 hdiutil CLI still creates a validated UDZO image but emits a deprecation warning; retain it for this delivery and track migration to diskutil-image after full create/sign/notarize acceptance.
+- Publication must use committed source, a universal archive, a separately notarized/stapled app before creating ZIP/DMG, signed feed, empty Release creation followed by individual asset uploads, bilingual release notes and anonymous full-byte asset comparisons. The previous runner created its ZIP from an unstapled export, combined create/upload, and committed after installation; these paths must be corrected for this release.
