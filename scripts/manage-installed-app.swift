@@ -1,6 +1,7 @@
 #!/usr/bin/swift
 import AppKit
 import Foundation
+import Darwin
 
 let bundleID = "com.x0c.openinput"
 let executable = URL(fileURLWithPath: "/Applications/OpenInput.app/Contents/MacOS/OpenInput").standardizedFileURL
@@ -23,7 +24,9 @@ case "stop":
               current.bundleIdentifier == bundleID,
               current.executableURL?.standardizedFileURL == executable,
               current.launchDate == app.launchDate else { continue }
-        guard current.terminate() else { fail("The installed app declined termination; no files replaced.") }
+        guard Darwin.kill(current.processIdentifier, SIGTERM) == 0 else {
+            fail("Could not signal the verified installed app; no files replaced.")
+        }
     }
     let deadline = Date().addingTimeInterval(8)
     while !matchingApplications().isEmpty, Date() < deadline {
