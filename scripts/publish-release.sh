@@ -94,13 +94,13 @@ xcrun stapler validate "${dmg_path}"
 spctl -a -vvv -t install "${dmg_path}"
 
 step "覆盖安装到本机并启动验证"
-pkill -x OpenInput 2>/dev/null || true
+swift scripts/manage-installed-app.swift stop
 rm -rf /Applications/OpenInput.app
 ditto "${app_path}" /Applications/OpenInput.app
 codesign --verify --deep --strict --verbose=2 /Applications/OpenInput.app
 open /Applications/OpenInput.app
 sleep 2
-pgrep -x OpenInput >/dev/null || die "本机安装后没有成功启动"
+swift scripts/manage-installed-app.swift verify
 
 step "生成已装订 Sparkle 更新包与清单"
 ditto -c -k --keepParent "${app_path}" "${zip_path}"
