@@ -110,8 +110,9 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 | `panel.opacity` | `1.0` | Double | 面板不透明度 | clamp 0.35...1.0 |
 | `panel.defaultSize` | `.regular` | string enum | 默认窗口尺寸 | compact/regular/large |
 | `panel.windowFrame` | 默认尺寸 | JSON | 面板 frame 记忆 | CodableRect 编码 |
+| `settings.selectedPane` | `.general` | String enum | Last settings pane | `general` / `voice` / `apps` / `history` |
 | `insertion.method` | `.paste` | string enum | 注入方式 | typing 未启用 |
-| `insertion.autoSpaces` | `false` | Bool | 自动加空格 | 未启用（控件 disabled）|
+| `insertion.autoSpaces` | `false` | Bool | 自动加空格 | 未启用，不在设置中展示；保留存储键 |
 | `general.launchAtLogin` | `false` | Bool | 登录启动偏好 | 界面以系统真实状态为准；待批准时开关为关 |
 | `menuBar.iconVisible` | `true`（键不存在也是显示） | Bool | 是否显示菜单栏图标 | 用键是否存在判断，禁止把空当成关 |
 | `appMemory.autoShowMaster` | `true` | Bool | 自动弹出总开关 | 独立于 PreferencesKeys |
@@ -149,7 +150,7 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 - 【禁止】替 ad-hoc Debug 自动重装 LaunchAgent。
 - 【禁止】新增偏好时漏掉 `menuBar.iconVisible` 的「键不存在 = 显示」。
 - 【隐性依赖】`PreferencesStore.shared` 必须在任何偏好读取前初始化一次（AppDelegate 已做）——`private init` 里执行迁移，绕过多实例会用默认值。
-- 【隐性】无启动注册 AUTO：`(autoAddSpaces) / (insertion.method=typing)` 在 UI 是 disabled，逻辑未启用——改设置页前先读这里，不要让 AI 误以为能用。
+- `autoAddSpaces` and `insertion.method=typing` remain unimplemented and are not exposed in Settings. Their existing storage keys are retained; removing the former disabled controls does not enable either behavior.
 - 【隐性】窗口尺寸切换 (`defaultWindowSize`) 时立即 `resetWindowSizeToDefault` 重置窗位 —— 不改偏好则窗口仍保持记忆 frame。
 - 【叫法统一】偏好主称谓 = `PreferencesStore`；「登录启动」= LaunchAtLoginService；「自动弹出记忆」单独在 AppMemoryStore，**不要**与偏好库混淆。
 
@@ -189,3 +190,5 @@ AppMemoryStore 同样有旧键迁移（`autoShowMasterEnabled` → `appMemory.au
 ### 1.1.5 static visual acceptance
 
 Native Settings-scene inspection of the installed Debug app passed all four panes in English/light and Simplified Chinese/dark. Width is 480 points; complete window heights are General 474, Voice 391, App Memory/History 488. Images were inspected at preserved pixel dimensions. Real app-memory/history rows were displayed without changing their data. Native switches, aligned picker/slider controls, all toolbar labels, app/version/update/quit and history search are visible; no settings scrollbar or clipped settings row. The final replacement-prompt correction was separately recaptured and inspected in both languages/appearances; the native fields display their prompts with no wrapping or extracted outer labels. Conditional login approval, microphone denial/older OS and physical keyboard/VoiceOver remain unverified under lock; the formal installed General pane also covered the accessibility-denied state; no microphone or destructive user-content action was invoked.
+
+The notarized 1.1.5 (10) Release subsequently passed native-menu opening and inspected English/light captures of all four panes, plus Chinese/light General. The accessibility-denied General pane is 478 points high; its system-settings action fits. Voice, App Memory and History retain the heights above. History search and bottom actions are visible with a real row; static evidence does not establish searching, deletion or keyboard behavior. Installed artifact, public-download checks and remaining limits are recorded in [Operations: verified delivery](OPERATIONS_GUIDE.md#verified-115-delivery).
