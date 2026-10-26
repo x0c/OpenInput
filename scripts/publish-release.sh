@@ -140,6 +140,10 @@ step "发布首装镜像与更新包到源码仓"
 # 同一版本可安全重跑：已经存在的公开资产先复用并在最后做匿名下载验证，
 # 不重复上传，以免慢链路空耗时间或触发平台的“文件已存在”错误。
 if ! gh release view "v${version}" --repo "${SOURCE_REPOSITORY}" >/dev/null 2>&1; then
+  if [[ -n "${RELEASE_NOTES_FILE:-}" && -f "${RELEASE_NOTES_FILE}" ]]; then
+    # Release train: notes prepared from CHANGELOG.md (English first, then Simplified Chinese).
+    cp "${RELEASE_NOTES_FILE}" "${updates_dir}/notes.md"
+  else
   cat > "${updates_dir}/notes.md" <<'NOTES'
 ## English
 - Refined Settings into four native tabs: General, Voice, App Memory and History.
@@ -151,6 +155,7 @@ if ! gh release view "v${version}" --repo "${SOURCE_REPOSITORY}" >/dev/null 2>&1
 - 系统控件统一对齐，应用信息、更新和退出合并为一行；全部设置无需滚动。
 - 保留偏好与语音、输入行为，移除未启用控件和自绘焦点描边。
 NOTES
+  fi
   gh release create "v${version}" --repo "${SOURCE_REPOSITORY}" --target "$(git rev-parse HEAD)" --title "OpenInput ${version}" --notes-file "${updates_dir}/notes.md"
 
 fi
